@@ -1,39 +1,46 @@
 public class Arithmetic {
-    int a, b, max, min;
-    int sum = 0;
-    int proizvedenie = 0;
+    int a, b;
 
     public Arithmetic(int a, int b) {
-        System.out.println("Задание 2:");
         this.a = a;
         this.b = b;
     }
 
-    public void calculateSum() {
-        sum = a + b;
-        System.out.println("Сумма чисел: " + sum);
+    public int calculateSum() {
+        int sum = a + b;
+        return sum;
     }
 
-    public void calculateProizvedenie() {
-        proizvedenie = a * b;
-        System.out.println("Произведение чисел: " + proizvedenie);
+    public int calculateProizvedenie() {
+        int proizvedenie = a * b;
+        return proizvedenie;
     }
 
-    public void bolsheeChislo() {
+    public int bolsheeChislo() {
+        int max;
         if (a > b) {
             max = a;
         } else {
             max = b;
         }
-        System.out.println("Большее число: " + max);
+        return max;
     }
 
-    public void mensheeChislo() {
+    public int mensheeChislo() {
+        int min;
         if (a < b) {
             min = a;
         } else {
             min = b;
         }
-        System.out.println("Меньшее число: " + min);
+        return min;
+    }
+
+    public void print() {
+        System.out.println("Задание 2");
+        System.out.println("Сумма чисел: " + calculateSum());
+        System.out.println("Произведение чисел: " + calculateProizvedenie());
+        System.out.println("Большее число: " + bolsheeChislo());
+        System.out.println("Меньшее число: " + mensheeChislo());
     }
 }

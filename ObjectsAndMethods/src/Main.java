@@ -9,14 +9,11 @@ public class Main {
         mashaBasket.print("Корзина Маши:");
 
         Arithmetic alexArithmetic = new Arithmetic(11, 12);
-        alexArithmetic.calculateSum();
-        alexArithmetic.calculateProizvedenie();
-        alexArithmetic.bolsheeChislo();
-        alexArithmetic.mensheeChislo();
+        alexArithmetic.print();
 
         Printer alexPrinter = new Printer();
-        alexPrinter.append("Текст документа", "Имя документа", 10);
-        alexPrinter.append("Текст документа 1", "Имя документа 1", 12);
+        alexPrinter.append("Текст документа", "Имя документа", 15);
+        alexPrinter.append("Текст документа 1", "Имя документа 1", 16);
         alexPrinter.print();
     }
 }

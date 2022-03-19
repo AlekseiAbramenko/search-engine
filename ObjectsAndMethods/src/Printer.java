@@ -12,7 +12,7 @@ public class Printer {
     }
 
     public void append(String text, String name, int count) {
-        pendingPagesCount = count;
+        pendingPagesCount += count;
         queue = queue + "\n" + name + "\n" + text + "\n" + count + " стр." + "\n";
         totalPrintingPages += pendingPagesCount;
     }
@@ -23,11 +23,11 @@ public class Printer {
 
     public void clear() {
         queue = "";
+        pendingPagesCount = 0;
     }
 
     public void print() {
         System.out.println(queue);
-        clear();
         System.out.println("Добавлено: " + getPendingPagesCount() + " стр." +
                 "\n" + "Всего распечатано: " + getTotalPrintingPages() + " стр.");
     }

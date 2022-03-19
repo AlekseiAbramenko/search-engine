@@ -1,4 +1,6 @@
 public class Basket {
+
+//    private static int count = 0;
     private String items = "";
     private int totalPrice = 0;
     private int limit;
@@ -29,6 +31,7 @@ public class Basket {
     }
 
     public Basket() {
+//        increaseCount(1);
         items = "Список товаров:";
         this.limit = 1000000;
     }
@@ -43,6 +46,14 @@ public class Basket {
         this.items = this.items + items;
         this.totalPrice = totalPrice;
     }
+
+//    public static int getCount() {
+//        return count;
+//    }
+//
+//    public static void increaseCount(int count) {
+//        Basket.count = Basket.count + count;
+//    }
 
     public void clear() {
         items = "";
