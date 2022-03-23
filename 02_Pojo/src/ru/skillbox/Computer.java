@@ -1,10 +1,10 @@
 package ru.skillbox;
 
 public class Computer {
-    public String name;
-    public String model;
-    public String processor;
-    public String memory;
+    private String name;
+    private String model;
+    private String processor;
+    private String memory;
 
     public Computer(String name, String model) {
         this.name = name;

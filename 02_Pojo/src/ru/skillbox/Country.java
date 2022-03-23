@@ -1,13 +1,14 @@
 package ru.skillbox;
 
 public class Country {
-    public String name;
-    public int populationSize;
-    public int area;
-    public String capital;
-    public boolean seaAccess;
+    private String name;
+    private int populationSize;
+    private int area;
+    private String capital;
+    private boolean seaAccess;
 
     public Country(String name) {
+        this.name = name;
     }
 
     public String getName() {
