@@ -11,6 +11,10 @@ public class Dimensions {
        this.height = height;
     }
 
+    public Dimensions setSizes(double length, double width, double height) {
+        return new Dimensions(length, width, height);
+    }
+
     public Dimensions setLength(double length) {
         return new Dimensions(length, width, height);
     }
