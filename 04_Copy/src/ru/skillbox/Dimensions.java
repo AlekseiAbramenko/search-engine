@@ -11,7 +11,7 @@ public class Dimensions {
        this.height = height;
     }
 
-    public Dimensions setSizes(double length, double width, double height) {
+    public Dimensions setDimensions(double length, double width, double height) {
         return new Dimensions(length, width, height);
     }
 
@@ -43,11 +43,11 @@ public class Dimensions {
         return getLength() * getWidth() * getHeight();
     }
 
-    public String getSizes() {
+    public String getDimensions() {
         return getLength() + " * " + getWidth() + " * " + getHeight();
     }
 
     public String toString() {
-        return getSizes();
+        return getDimensions();
     }
 }
