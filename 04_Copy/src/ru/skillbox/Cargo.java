@@ -17,6 +17,10 @@ public class Cargo {
         this.fragile = fragile;
     }
 
+    public Cargo setDimensions(Dimensions dimensions) {
+        return new Cargo(dimensions, weight, address, flip, number, fragile);
+    }
+
     public Cargo setWeightAndAddress(double weight, String address) {
         return new Cargo(dimensions, weight, address, flip, number, fragile);
     }

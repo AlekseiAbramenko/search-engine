@@ -15,18 +15,6 @@ public class Dimensions {
         return new Dimensions(length, width, height);
     }
 
-    public Dimensions setLength(double length) {
-        return new Dimensions(length, width, height);
-    }
-
-    public Dimensions setWidth(double width) {
-        return new Dimensions(length, width, height);
-    }
-
-    public Dimensions setHeight(double height) {
-        return new Dimensions(length, width, height);
-    }
-
     public double getLength() {
         return length;
     }
