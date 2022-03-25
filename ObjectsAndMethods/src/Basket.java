@@ -1,10 +1,28 @@
 public class Basket {
 
-//    private static int count = 0;
+    private static int count = 0;
+    private static int allBasketsPrice = 0;
+    private static int allBasketsProduct = 0;
     private String items = "";
     private int totalPrice = 0;
     private int limit;
     private double totalWeight = 0;
+
+    public static int getAllBasketsPrice() {
+        return allBasketsPrice;
+    }
+
+    public static int getAllBasketsProduct() {
+        return allBasketsProduct;
+    }
+
+    public static int getAverageProductPrice() {
+        return getAllBasketsPrice() / getAllBasketsProduct();
+    }
+
+    public static int getAverageBasketPrice() {
+        return getAllBasketsPrice() / getCount();
+    }
 
     public void add(String name, int price) {
         add(name, price, 1);
@@ -15,23 +33,23 @@ public class Basket {
     }
 
     public void add(String name, int price, int count, double weight) {
-        price *= count;
-        weight *= count;
-
         if (conteins(name)) {
             return;
         }
-        if (totalPrice + price >= limit) {
+        if (totalPrice + price * count >= limit) {
             return;
         }
 
         items = items + "\n" + name + " - " + count + " шт. - " + price + " - " + weight + " кг.";
-        totalPrice += price;
-        totalWeight += weight;
+        totalPrice += price * count;
+        totalWeight += weight * count;
+
+        allBasketsPrice += price * count;
+        allBasketsProduct += count;
     }
 
     public Basket() {
-//        increaseCount(1);
+        increaseCount(1);
         items = "Список товаров:";
         this.limit = 1000000;
     }
@@ -47,13 +65,13 @@ public class Basket {
         this.totalPrice = totalPrice;
     }
 
-//    public static int getCount() {
-//        return count;
-//    }
-//
-//    public static void increaseCount(int count) {
-//        Basket.count = Basket.count + count;
-//    }
+    public static int getCount() {
+        return count;
+    }
+
+    public static void increaseCount(int count) {
+        Basket.count += count;
+    }
 
     public void clear() {
         items = "";
