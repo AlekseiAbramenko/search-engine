@@ -1,9 +1,8 @@
 package ru.skillbox;
 
 public class ArithmeticCalculator {
-    public int a;
-    public int b;
-    public int result;
+    private int a;
+    private int b;
 
     public ArithmeticCalculator(int a, int b) {
         this.a = a;
@@ -12,16 +11,16 @@ public class ArithmeticCalculator {
 
     public int calculate(Operation operation) {
         if(operation == Operation.ADD) {
-            result = a + b;
+            return a + b;
         }
 
         if(operation == Operation.SUBTRACT) {
-            result = a - b;
+            return a - b;
         }
 
         if(operation == Operation.MULTIPLY) {
-            result = a * b;
+            return a * b;
         }
-        return result;
+        return 0;
     }
 }
