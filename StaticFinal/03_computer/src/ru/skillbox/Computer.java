@@ -16,10 +16,10 @@ public class Computer {
 
     public Processor setProcessor(ProcessorsStorage processor) {
         if (processor == ProcessorsStorage.IntelCoreI5) {
-            this.processor = new Processor(1.66, 5, "Intel", 0.021);
+            this.processor = ProcessorsBank.IntellCoreI5();
         }
         if (processor == ProcessorsStorage.IntelCoreI7) {
-            this.processor = new Processor(2.44, 7, "Intel", 0.021);
+            this.processor = ProcessorsBank.IntellCoreI7();
         }
         return this.processor;
     } //TODO: перенести объекты в отдельные классы
