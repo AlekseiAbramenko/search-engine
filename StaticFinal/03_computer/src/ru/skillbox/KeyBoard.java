@@ -17,8 +17,8 @@ public class KeyBoard {
         return keyBoardType;
     }
 
-    public boolean isKeyBoardIllumination() {
-        return keyBoardIllumination;
+    public String isKeyBoardIllumination() {
+        return keyBoardIllumination ? "да" : "нет";
     }
 
     public double getKeyBoardWeight() {
@@ -28,7 +28,7 @@ public class KeyBoard {
     public String getKeyBoard() {
         return "Клавиатура" + "\n"
                 + "Тип: " + getKeyBoardType() + "\n"
-                + "Подсветка: " + isKeyBoardIllumination() + "\n" // TODO: воткнуть тернарный оператор
+                + "Подсветка: " + isKeyBoardIllumination() + "\n"
                 + "Вес: " + getKeyBoardWeight() + " кг.";
     }
 
