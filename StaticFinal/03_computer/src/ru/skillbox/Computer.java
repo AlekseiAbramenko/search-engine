@@ -14,54 +14,24 @@ public class Computer {
         this.name = name;
     }
 
-    public Processor setProcessor(ProcessorsStorage processor) {
-        if (processor == ProcessorsStorage.IntelCoreI5) {
-            this.processor = ProcessorsBank.IntellCoreI5();
-        }
-        if (processor == ProcessorsStorage.IntelCoreI7) {
-            this.processor = ProcessorsBank.IntellCoreI7();
-        }
-        return this.processor;
-    } //TODO: перенести объекты в отдельные классы
-
-    public Ram setRam(RamStorage ram) {
-        if (ram == RamStorage.PatriotSignatureDDR3) {
-            this.ram = new Ram("DDR3", 4, 0.015);
-        }
-        if (ram == RamStorage.KingstonDDRR4) {
-            this.ram = new Ram("DDR4", 8, 0.015);
-        }
-        return this.ram;
+    public void setProcessor(Processor processor) {
+        this.processor = processor;
     }
 
-    public Drive setDrive(DriveStorage drive) {
-        if (drive == DriveStorage.SeagateBarracuda_ST500LM030) {
-            this.drive = new Drive(DriveType.HDD, 500, 0.09);
-        }
-        if (drive == DriveStorage.SeagateBarracuda_ST6000DM003) {
-            this.drive = new Drive(DriveType.HDD, 6000, 0.61);
-        }
-        return this.drive;
+    public void setRam(Ram ram) {
+        this.ram = ram;
     }
 
-    public Screen setScreen(ScreenStorage screen) {
-        if (screen == ScreenStorage.ASUS_TUF_Gaming_VG27VQ) {
-            this.screen = new Screen(24, ScreenType.IPS, 3.4);
-        }
-        if (screen == ScreenStorage.Samsung_S24R356FHI) {
-            this.screen = new Screen(27, ScreenType.VA, 6);
-        }
-        return this.screen;
+    public void setDrive(Drive drive) {
+        this.drive = drive;
     }
 
-    public KeyBoard setKeyBoard(KeyBoardStorage keyBoard) {
-        if (keyBoard == KeyBoardStorage.Logitech_K380) {
-            this.keyBoard = new KeyBoard("мембранная", false, 0.423);
-        }
-        if (keyBoard == KeyBoardStorage.Logitech_K400) {
-            this.keyBoard = new KeyBoard("мембранная", true, 0.425);
-        }
-        return this.keyBoard;
+    public void setScreen(Screen screen) {
+        this.screen = screen;
+    }
+
+    public void setKeyBoard(KeyBoard keyBoard) {
+        this.keyBoard = keyBoard;
     }
 
     public Processor getProcessor() {
