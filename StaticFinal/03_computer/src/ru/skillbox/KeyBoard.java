@@ -3,14 +3,12 @@ package ru.skillbox;
 public class KeyBoard {
     private final String keyBoardType;
     private final boolean keyBoardIllumination;
-    private final double keyBoardWeight;
-    public static double getKeyboardWeight;
+    private static double keyBoardWeight;
 
     public KeyBoard(String keyBoardType, boolean keyBoardIllumination, double keyBoardWeight) {
         this.keyBoardType = keyBoardType;
         this.keyBoardIllumination = keyBoardIllumination;
         this.keyBoardWeight = keyBoardWeight;
-        getKeyboardWeight = keyBoardWeight;
     }
 
     public String getKeyBoardType() {
@@ -21,7 +19,7 @@ public class KeyBoard {
         return keyBoardIllumination ? "да" : "нет";
     }
 
-    public double getKeyBoardWeight() {
+    public static double getKeyBoardWeight() {
         return keyBoardWeight;
     }
 

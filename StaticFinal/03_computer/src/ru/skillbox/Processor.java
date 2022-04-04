@@ -4,15 +4,13 @@ public class Processor {
     private final double processorFrequency;
     private final int coresCount;
     private final String manufacturer;
-    private final double weight;
-    public static double getProcessorWeight;
+    private static double weight;
 
     public Processor(double processorFrequency, int coresCount, String manufacturer, double weight) {
         this.processorFrequency = processorFrequency;
         this.coresCount = coresCount;
         this.manufacturer = manufacturer;
         this.weight = weight;
-        getProcessorWeight = weight;
     }
 
     public double getProcessorFrequency() {
@@ -27,7 +25,7 @@ public class Processor {
         return manufacturer;
     }
 
-    public double getWeight() {
+    public static double getWeight() {
         return weight;
     }
 

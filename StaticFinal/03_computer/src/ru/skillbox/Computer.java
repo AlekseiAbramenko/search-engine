@@ -63,8 +63,8 @@ public class Computer {
     }
 
     public double getComputerWeight() {
-        return Processor.getProcessorWeight + Ram.getRamWeight
-                + Drive.getDriveWeight + Screen.getScreenWeight + KeyBoard.getKeyboardWeight;
+        return Processor.getWeight() + Ram.getMemoryWeight()
+                + Drive.getDriveWeight() + Screen.getScreenWeight() + KeyBoard.getKeyBoardWeight();
     }
 
     public String getComputer() {

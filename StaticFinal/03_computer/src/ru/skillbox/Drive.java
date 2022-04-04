@@ -3,14 +3,12 @@ package ru.skillbox;
 public class Drive {
     private final DriveType driveType;
     private final int driveValue;
-    private final double driveWeight;
-    public static double getDriveWeight;
+    private static double driveWeight;
 
     public Drive(DriveType driveType, int driveValue, double driveWeight) {
         this.driveType = driveType;
         this.driveValue = driveValue;
         this.driveWeight = driveWeight;
-        getDriveWeight = driveWeight;
     }
 
     public DriveType getDriveType() {
@@ -21,7 +19,7 @@ public class Drive {
         return driveValue;
     }
 
-    public double getDriveWeight() {
+    public static double getDriveWeight() {
         return driveWeight;
     }
 

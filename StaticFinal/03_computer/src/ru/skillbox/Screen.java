@@ -3,14 +3,12 @@ package ru.skillbox;
 public class Screen {
     private final int screenDiagonal;
     private final ScreenType screenType;
-    private final double screenWeight;
-    public static double getScreenWeight;
+    private static double screenWeight;
 
     public Screen(int screenDiagonal, ScreenType screenType, double screenWeight) {
         this.screenDiagonal = screenDiagonal;
         this.screenType = screenType;
         this.screenWeight = screenWeight;
-        getScreenWeight = screenWeight;
     }
 
     public int getScreenDiagonal() {
@@ -21,7 +19,7 @@ public class Screen {
         return screenType;
     }
 
-    public double getScreenWeight() {
+    public static double getScreenWeight() {
         return screenWeight;
     }
 
