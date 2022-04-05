@@ -3,7 +3,7 @@ package ru.skillbox;
 public class Screen {
     private final int screenDiagonal;
     private final ScreenType screenType;
-    private static double screenWeight;
+    private final double screenWeight;
 
     public Screen(int screenDiagonal, ScreenType screenType, double screenWeight) {
         this.screenDiagonal = screenDiagonal;
@@ -19,18 +19,14 @@ public class Screen {
         return screenType;
     }
 
-    public static double getScreenWeight() {
+    public double getScreenWeight() {
         return screenWeight;
     }
 
-    public String getScreen() {
+    public String toString() {
         return "Экран" + "\n"
                 + "Диагональ: " + getScreenDiagonal() + " ''" + "\n"
                 + "Тип: " + getScreenType() + "\n"
                 + "Вес: " + getScreenWeight() + " кг.";
-    }
-
-    public String toString() {
-        return getScreen();
     }
 }

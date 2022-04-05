@@ -4,7 +4,7 @@ public class Processor {
     private final double processorFrequency;
     private final int coresCount;
     private final String manufacturer;
-    private static double weight;
+    private final double weight;
 
     public Processor(double processorFrequency, int coresCount, String manufacturer, double weight) {
         this.processorFrequency = processorFrequency;
@@ -25,19 +25,15 @@ public class Processor {
         return manufacturer;
     }
 
-    public static double getWeight() {
+    public double getWeight() {
         return weight;
     }
 
-    public String getProcessor() {
+     public String toString() {
         return "Процессор" + "\n"
                 + "Частота: " + getProcessorFrequency() + " МГц" + "\n"
                 + "Количество ядер: " + getCoresCount() + "\n"
                 + "Производитель: " + getManufacturer() + "\n"
                 + "Вес: " + getWeight() + " кг.";
-    }
-
-    public String toString() {
-        return getProcessor();
     }
 }

@@ -63,19 +63,15 @@ public class Computer {
     }
 
     public double getComputerWeight() {
-        return Processor.getWeight() + Ram.getMemoryWeight()
-                + Drive.getDriveWeight() + Screen.getScreenWeight() + KeyBoard.getKeyBoardWeight();
+        return processor.getWeight() + ram.getMemoryWeight()
+                + drive.getDriveWeight() + screen.getScreenWeight() + keyBoard.getKeyBoardWeight();
     }
 
-    public String getComputer() {
+    public String toString() {
         return "Компьютер " + getVendor() + " " + getName() + "\n\n"
                 + getProcessor() + "\n\n" + getRam() + "\n\n"
                 + getDrive() + "\n\n" + getScreen() + "\n\n"
                 + getKeyBoard() + "\n\n" + "Общий вес компьютера: "
                 + getComputerWeight() + " кг.";
-    }
-
-    public String toString() {
-        return getComputer();
     }
 }

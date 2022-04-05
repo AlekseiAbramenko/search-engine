@@ -3,7 +3,7 @@ package ru.skillbox;
 public class Drive {
     private final DriveType driveType;
     private final int driveValue;
-    private static double driveWeight;
+    private final double driveWeight;
 
     public Drive(DriveType driveType, int driveValue, double driveWeight) {
         this.driveType = driveType;
@@ -19,18 +19,14 @@ public class Drive {
         return driveValue;
     }
 
-    public static double getDriveWeight() {
+    public double getDriveWeight() {
         return driveWeight;
     }
 
-    public String getDrive() {
+    public String toString() {
         return "Жесткий диск" + "\n"
                 + "Тип: " + getDriveType() + "\n"
                 + "Объем: " + getDriveValue() + " ГБ" + "\n"
                 + "Вес: " + getDriveWeight() + " кг.";
-    }
-
-    public String toString() {
-        return getDrive();
     }
 }

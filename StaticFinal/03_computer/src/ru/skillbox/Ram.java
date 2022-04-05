@@ -3,7 +3,7 @@ package ru.skillbox;
 public class Ram {
     private final String memoryType;
     private final int memoryValue;
-    private static double memoryWeight;
+    private final double memoryWeight;
 
     public Ram(String memoryType, int memoryValue, double memoryWeight) {
         this.memoryType = memoryType;
@@ -19,18 +19,14 @@ public class Ram {
         return memoryValue;
     }
 
-    public static double getMemoryWeight() {
+    public double getMemoryWeight() {
         return memoryWeight;
     }
 
-    public String getRam() {
+     public String toString() {
         return "Оперативная память" + "\n"
                 + "Тип: " + getMemoryType() + "\n"
                 + "Объем: " + getMemoryValue() + " ГБ" + "\n"
                 + "Вес: " + getMemoryWeight() + " кг.";
-    }
-
-    public String toString() {
-        return getRam();
     }
 }
