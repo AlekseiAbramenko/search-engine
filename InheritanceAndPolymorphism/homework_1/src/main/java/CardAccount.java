@@ -1,4 +1,11 @@
 public class CardAccount extends BankAccount {
-    // не забывайте, обращаться к методам и конструкторам родителя
-    // необходимо используя super, например, super.put(10D);
+
+    @Override
+    public void take(double amountToTake) {
+        double cashWithdrawalFee = 0.01;
+
+        if (amountToTake + amountToTake * cashWithdrawalFee < amount) {
+            amount -= (amountToTake + amountToTake * cashWithdrawalFee);
+        }
+    }
 }
