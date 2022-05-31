@@ -1,11 +1,9 @@
 public class CardAccount extends BankAccount {
 
+    private final double cashWithdrawalFee = 0.01;
+
     @Override
     public void take(double amountToTake) {
-        double cashWithdrawalFee = 0.01;
-
-        if (amountToTake + amountToTake * cashWithdrawalFee < amount) {
-            amount -= (amountToTake + amountToTake * cashWithdrawalFee);
-        }
+        super.take(amountToTake + amountToTake * cashWithdrawalFee);
     }
 }
