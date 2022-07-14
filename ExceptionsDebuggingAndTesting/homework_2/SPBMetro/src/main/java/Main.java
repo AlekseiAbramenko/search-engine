@@ -8,28 +8,26 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
-    private static final Logger logger = LogManager.getLogger(Main.class);
+    private static final Logger logger = LogManager.getLogger(Main.class.getName());
 
     private static final Marker INPUT_HISTORY_MARKER = MarkerManager.getMarker("INPUT_HISTORY");
-    private static final Marker INVALID_STATIONS_MARKER = MarkerManager.getMarker("INVALID_STATION");
-    private static final Marker ERRORS_MARKER = MarkerManager.getMarker("ERROR");
+    private static final Marker INVALID_STATIONS_MARKER = MarkerManager.getMarker("INVALID_STATION").setParents(INPUT_HISTORY_MARKER);
+    private static final Marker ERRORS_MARKER = MarkerManager.getMarker("ERROR").setParents(INPUT_HISTORY_MARKER);
 
     private static final String DATA_FILE = "C:\\Users\\Aleksei\\Skillbox\\java_basics\\ExceptionsDebuggingAndTesting\\homework_2\\SPBMetro\\src\\main\\resources\\map.json";
     private static Scanner scanner;
 
     private static StationIndex stationIndex;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         RouteCalculator calculator = getRouteCalculator();
 
         System.out.println("Программа расчёта маршрутов метрополитена Санкт-Петербурга\n");
@@ -40,7 +38,7 @@ public class Main {
                 logger.info(INPUT_HISTORY_MARKER, "Пользователь искал станцию отправления: {}", from);
 
                 Station to = takeStation("Введите станцию назначения:");
-                logger.info(INPUT_HISTORY_MARKER,"Пользователь искал станцию назначения: {}", to);
+                logger.info(INPUT_HISTORY_MARKER, "Пользователь искал станцию назначения: {}", to);
 
                 List<Station> route = calculator.getShortestRoute(from, to);
                 System.out.println("Маршрут:");
@@ -49,8 +47,7 @@ public class Main {
                 System.out.println("Длительность: " +
                         RouteCalculator.calculateDuration(route) + " минут");
             }
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             logger.error(ERRORS_MARKER, "Выброшено исключение:", ex);
         }
     }
