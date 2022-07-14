@@ -97,7 +97,11 @@ public class RouteCalculator {
                 }
             }
         }
-        return route;
+        if (route.size() == 0) {
+            return null;
+        } else {
+            return route;
+        }
     }
 
     private boolean isConnected(Station station1, Station station2) {
