@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
+
     private static final String MAP_JSON = "src/main/resources/map.json";
     private static final String DATA_PATH = "C:\\Users\\Aleksei\\Downloads\\data\\data";
 
