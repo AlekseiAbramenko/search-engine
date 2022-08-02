@@ -6,7 +6,8 @@ public class Main {
     private static final String DATA_PATH = "C:\\Users\\Aleksei\\Downloads\\data\\data";
 
     public static void main(String[] args) {
-        String htmlFile = ParseHtmlFile.getHtmlFile("src/doc/input.html");//записываем html файл в строку
+//записываем html файл в строку
+        String htmlFile = ParseHtmlFile.getHtmlFile("src/doc/input.html");
 //обходим папки, достаем пути к нужным файлам
         String[] extensions = {"json", "csv"};
         List files = FindFiles.findFiles(Paths.get(DATA_PATH), extensions);
@@ -23,7 +24,7 @@ public class Main {
         MakeJsonFiles.linesToPrettyPrinting((MakeJsonFiles.parseMapToJson(htmlFile)), "map.json");
 //записываем файл stations.json
         MakeJsonFiles.linesToPrettyPrinting(MakeJsonFiles.parseStationsToJson(htmlFile), "stations.json");
-
-        StationsCount.parseStationsCount(); //список линий + кол-во станций на них
+//печатаем список линий + кол-во станций на них
+        StationsCount.parseStationsCount();
     }
 }
