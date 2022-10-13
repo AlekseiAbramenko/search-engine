@@ -10,9 +10,7 @@ public class Main {
 
         sortBySalaryAndAlphabet(staff);
 
-        for (Employee employee : staff) {
-            System.out.println(employee);
-        }
+        staff.forEach(System.out::println);
     }
 
     public static void sortBySalaryAndAlphabet(List<Employee> staff) {

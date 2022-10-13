@@ -36,7 +36,7 @@ public class ParseDataFromFiles {
                     JSONObject stationJsonObject = (JSONObject) stationObject;
                     stationsDates.put(
                             (String) stationJsonObject.get("name"),
-                            (String)stationJsonObject.get("date"));
+                            (String) stationJsonObject.get("date"));
                 });
             }
         } catch (Exception ex) {
