@@ -20,5 +20,9 @@
         <property name="hbm2ddl.auto">validate</property>
 
         <mapping class="Course"></mapping>
+        <mapping class="Teacher"></mapping>
+        <mapping class="Student"></mapping>
+        <mapping class="Subscription"></mapping>
+        <mapping class="PurchaseList"></mapping>
     </session-factory>
 </hibernate-configuration>
