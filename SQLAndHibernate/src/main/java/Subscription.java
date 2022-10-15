@@ -9,22 +9,16 @@ public class Subscription {
     @EmbeddedId
     private SubscriptionKey id;
 
-    @Column(name = "student_id", insertable = false, updatable = false)
-    private int studentId;
-
-    @Column(name = "course_id", insertable = false, updatable = false)
-    private int courseId;
-
-    @Column(name = "subscription_date")
-    private Date subscriptionDate;
-
     @ManyToOne(optional=false, cascade=CascadeType.ALL)
-    @JoinColumn (name="id", insertable = false, updatable = false)
+    @JoinColumn (name="student_id", referencedColumnName ="id", insertable = false, updatable = false)
     private Student student;
 
     @ManyToOne(optional=false, cascade=CascadeType.ALL)
-    @JoinColumn (name="id", insertable = false, updatable = false)
+    @JoinColumn (name="course_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Course course;
+
+    @Column(name = "subscription_date")
+    private Date subscriptionDate;
 
     public Course getCourse() {
         return course;
@@ -40,22 +34,6 @@ public class Subscription {
 
     public void setStudent(Student student) {
         this.student = student;
-    }
-
-    public int getStudentId() {
-        return studentId;
-    }
-
-    public void setStudentId(int studentId) {
-        this.studentId = studentId;
-    }
-
-    public int getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(int courseId) {
-        this.courseId = courseId;
     }
 
     public Date getSubscriptionDate() {

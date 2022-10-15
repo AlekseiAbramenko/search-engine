@@ -20,7 +20,8 @@ public class Course {
 
     private String description;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(optional=false, cascade = CascadeType.ALL)
+    @JoinColumn (name="id", insertable = false, updatable = false)
     private Teacher teacher;
 
     @Column(name = "students_count")

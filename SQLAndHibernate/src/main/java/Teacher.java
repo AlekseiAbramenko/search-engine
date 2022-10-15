@@ -1,5 +1,7 @@
 import jakarta.persistence.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "Teachers")
 public class Teacher {
@@ -13,6 +15,17 @@ public class Teacher {
     private int salary;
 
     private int age;
+
+    @OneToMany(mappedBy = "teacher", fetch=FetchType.EAGER)
+    private List<Course> courses;
+
+    public List<Course> getCourses() {
+        return courses;
+    }
+
+    public void setCourses(List<Course> courses) {
+        this.courses = courses;
+    }
 
     public int getId() {
         return id;
