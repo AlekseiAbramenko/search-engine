@@ -17,6 +17,17 @@ public class Student {
     @Column(name = "registration_date")
     private Date registrationDate;
 
+    @OneToMany(cascade = CascadeType.ALL)
+    private Subscription subscription;
+
+    public Subscription getSubscription() {
+        return subscription;
+    }
+
+    public void setSubscription(Subscription subscription) {
+        this.subscription = subscription;
+    }
+
     public int getId() {
         return id;
     }
