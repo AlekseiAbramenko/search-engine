@@ -38,15 +38,15 @@ public class Course {
     )
     private List<Student> students;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    private Subscription subscription;
+    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER)
+    private List<Subscription> subscriptions;
 
-    public Subscription getSubscription() {
-        return subscription;
+    public List<Subscription> getSubscriptions() {
+        return subscriptions;
     }
 
-    public void setSubscription(Subscription subscription) {
-        this.subscription = subscription;
+    public void setSubscriptions(List<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
     }
 
     public List<Student> getStudents() {

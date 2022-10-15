@@ -18,10 +18,12 @@ public class Subscription {
     @Column(name = "subscription_date")
     private Date subscriptionDate;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(optional=false, cascade=CascadeType.ALL)
+    @JoinColumn (name="id", insertable = false, updatable = false)
     private Student student;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(optional=false, cascade=CascadeType.ALL)
+    @JoinColumn (name="id", insertable = false, updatable = false)
     private Course course;
 
     public Course getCourse() {

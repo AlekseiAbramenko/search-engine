@@ -19,14 +19,27 @@ public class Main {
 
         Session session = sessionFactory.openSession();
 
-            Course course = session.get(Course.class, 10);
-            //System.out.println(course.getTeacher().getName());
+        Course course = session.get(Course.class, 10);
+//        System.out.println(course.getTeacher().getName());
 
-//            List<Student> studentList = course.getStudents();
-//            studentList.forEach(student -> System.out.println(student.getName()));
+//        List<Student> studentList = course.getStudents();
+//        System.out.println("На курс " + course.getName() + " зарегистрированы студенты: ");
+//        studentList.forEach(student -> System.out.println(student.getName()
+//                + ". Дата регистрации: " + student.getRegistrationDate()));
+//
+//        System.out.println("");
+//
+        Student student = session.get(Student.class, 1);
+//        List<Course> courses = student.getCourses();
+//        System.out.println("Студент " + student.getName() + " зарегистрирован на курсы:");
+//        courses.forEach(course1 -> System.out.println(course1.getName()
+//                + ". Преподаватель: " + course1.getTeacher().getName()));
 
-            Teacher teacher = session.get(Teacher.class, 10);
+        Subscription subscription = session.get(Subscription.class, new SubscriptionKey(1, 10));
+        System.out.println(subscription.getStudent().getName() + " " + subscription.getCourse().getName());
 
+        List<Subscription> subscriptions = student.getSubscriptions();
+        subscriptions.forEach(System.out::println);
 
         sessionFactory.close();
     }

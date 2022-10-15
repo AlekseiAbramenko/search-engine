@@ -21,6 +21,10 @@ public class SubscriptionKey implements Serializable {
         this.courseId = courseId;
     }
 
+//    public SubscriptionKey(Student student, Course course) {
+//        this.studentId = student.getId();
+//        this.courseId = course.getId();
+
     public int getStudentId() {
         return studentId;
     }
