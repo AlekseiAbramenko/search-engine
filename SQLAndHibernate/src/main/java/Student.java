@@ -18,14 +18,14 @@ public class Student {
     @Column(name = "registration_date")
     private Date registrationDate;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY)
     @JoinTable(name = "Subscriptions",
             joinColumns = {@JoinColumn(name = "student_id")},
             inverseJoinColumns = {@JoinColumn(name = "course_id")}
     )
     private List<Course> courses;
 
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "student", fetch=FetchType.LAZY)
     private List<Subscription> subscriptions;
 
     public List<Subscription> getSubscriptions() {

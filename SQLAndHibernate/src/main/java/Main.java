@@ -54,7 +54,7 @@ public class Main {
 
         Teacher teacher = session.get(Teacher.class, 10);
         List<Course> courseList = teacher.getCourses();
-        System.out.println("Преподаватель " + teacher.getName() + "Ведет курсы:");
+        System.out.println("Преподаватель " + teacher.getName() + " ведет курсы:");
         courseList.forEach(c -> System.out.println(c.getName()));
 
         sessionFactory.close();

@@ -10,11 +10,11 @@ public class Subscription {
     private SubscriptionKey id;
 
     @ManyToOne(cascade=CascadeType.ALL)
-    @JoinColumn (name="student_id", referencedColumnName ="id", insertable = false, updatable = false)
+    @JoinColumn (name="student_id", insertable = false, updatable = false)
     private Student student;
 
     @ManyToOne(cascade=CascadeType.ALL)
-    @JoinColumn (name="course_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn (name="course_id", insertable = false, updatable = false)
     private Course course;
 
     @Column(name = "subscription_date")
