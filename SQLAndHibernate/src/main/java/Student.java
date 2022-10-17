@@ -20,9 +20,8 @@ public class Student {
 
     @ManyToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY)
     @JoinTable(name = "Subscriptions",
-            joinColumns = {@JoinColumn(name = "student_id")},
-            inverseJoinColumns = {@JoinColumn(name = "course_id")}
-    )
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id"))
     private List<Course> courses;
 
     @OneToMany(mappedBy = "student", fetch=FetchType.LAZY)

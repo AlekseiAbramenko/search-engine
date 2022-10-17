@@ -34,9 +34,8 @@ public class Course {
 
     @ManyToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY)
     @JoinTable(name = "Subscriptions",
-            joinColumns = {@JoinColumn(name = "course_id")},
-            inverseJoinColumns = {@JoinColumn(name = "student_id")}
-    )
+            joinColumns = @JoinColumn(name = "course_id"),
+            inverseJoinColumns = @JoinColumn(name = "student_id"))
     private List<Student> students;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch=FetchType.LAZY)
