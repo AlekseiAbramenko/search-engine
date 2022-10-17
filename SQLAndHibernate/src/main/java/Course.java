@@ -20,8 +20,7 @@ public class Course {
 
     private String description;
 
-    @ManyToOne(optional=false, cascade = CascadeType.ALL)
-    @JoinColumn (name="id", insertable = false, updatable = false)
+    @ManyToOne(cascade = CascadeType.ALL)
     private Teacher teacher;
 
     @Column(name = "students_count")
@@ -39,7 +38,7 @@ public class Course {
     )
     private List<Student> students;
 
-    @OneToMany(mappedBy = "course", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "course")
     private List<Subscription> subscriptions;
 
     public List<Subscription> getSubscriptions() {

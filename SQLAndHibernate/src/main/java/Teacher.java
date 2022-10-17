@@ -16,7 +16,7 @@ public class Teacher {
 
     private int age;
 
-    @OneToMany(mappedBy = "teacher", fetch=FetchType.EAGER)
+    @OneToMany(mappedBy = "teacher")
     private List<Course> courses;
 
     public List<Course> getCourses() {

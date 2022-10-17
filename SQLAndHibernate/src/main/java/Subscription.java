@@ -9,11 +9,11 @@ public class Subscription {
     @EmbeddedId
     private SubscriptionKey id;
 
-    @ManyToOne(optional=false, cascade=CascadeType.ALL)
+    @ManyToOne(cascade=CascadeType.ALL)
     @JoinColumn (name="student_id", referencedColumnName ="id", insertable = false, updatable = false)
     private Student student;
 
-    @ManyToOne(optional=false, cascade=CascadeType.ALL)
+    @ManyToOne(cascade=CascadeType.ALL)
     @JoinColumn (name="course_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Course course;
 

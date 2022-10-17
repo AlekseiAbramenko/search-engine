@@ -25,7 +25,7 @@ public class Student {
     )
     private List<Course> courses;
 
-    @OneToMany(mappedBy = "student", fetch=FetchType.EAGER)
+    @OneToMany(mappedBy = "student")
     private List<Subscription> subscriptions;
 
     public List<Subscription> getSubscriptions() {
