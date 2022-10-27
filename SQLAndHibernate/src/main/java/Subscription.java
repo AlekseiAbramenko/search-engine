@@ -1,3 +1,4 @@
+import Keys.SubscriptionKey;
 import jakarta.persistence.*;
 
 import java.util.Date;

@@ -1,3 +1,4 @@
+import Keys.PurchaseListKey;
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -7,41 +8,43 @@ import java.util.Date;
 public class PurchaseList {
 
     @EmbeddedId
-    private PurchaseKey id;
+    private PurchaseListKey id;
 
-    @Column(name = "student_name", insertable = false, updatable = false)
-    private String studentName;
+    @ManyToOne(cascade=CascadeType.ALL)
+    @JoinColumn(name = "student_name", referencedColumnName = "name", insertable = false, updatable = false)
+    private Student student;
 
-    @Column(name = "course_name", insertable = false, updatable = false)
-    private String courseName;
+    @ManyToOne(cascade=CascadeType.ALL)
+    @JoinColumn(name = "course_name", referencedColumnName = "name", insertable = false, updatable = false)
+    private Course course;
 
     private int price;
 
     @Column(name = "subscription_date")
     private Date subscriptionDate;
 
-    public PurchaseKey getId() {
+    public PurchaseListKey getId() {
         return id;
     }
 
-    public void setId(PurchaseKey id) {
+    public void setId(PurchaseListKey id) {
         this.id = id;
     }
 
-    public String getStudentName() {
-        return studentName;
+    public Student getStudent() {
+        return student;
     }
 
-    public void setStudentName(String studentName) {
-        this.studentName = studentName;
+    public void setStudent(Student student) {
+        this.student = student;
     }
 
-    public String getCourseName() {
-        return courseName;
+    public Course getCourse() {
+        return course;
     }
 
-    public void setCourseName(String courseName) {
-        this.courseName = courseName;
+    public void setCourse(Course course) {
+        this.course = course;
     }
 
     public int getPrice() {

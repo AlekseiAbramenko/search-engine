@@ -9,7 +9,7 @@ public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
     private String name;
 
@@ -26,6 +26,20 @@ public class Student {
 
     @OneToMany(mappedBy = "student", fetch=FetchType.LAZY)
     private List<Subscription> subscriptions;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY)
+    @JoinTable(name = "Purchaselist",
+            joinColumns = @JoinColumn(name = "student_name"),
+            inverseJoinColumns = @JoinColumn(name = "course_name"))
+    private List<Course> courseNames;
+
+    public List<Course> getCourseNames() {
+        return courseNames;
+    }
+
+    public void setCourseNames(List<Course> courseNames) {
+        this.courseNames = courseNames;
+    }
 
     public List<Subscription> getSubscriptions() {
         return subscriptions;

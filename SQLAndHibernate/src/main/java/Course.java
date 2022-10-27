@@ -8,7 +8,7 @@ public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
     private String name;
 
@@ -20,12 +20,12 @@ public class Course {
 
     private String description;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id")
     private Teacher teacher;
 
-    @Column(name = "students_count")
-    private int studentsCount;
+    @Column(name = "students_count", nullable = true)
+    private Integer studentsCount;
 
     private int price;
 
@@ -40,6 +40,20 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch=FetchType.LAZY)
     private List<Subscription> subscriptions;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY)
+    @JoinTable(name = "Purchaselist",
+            joinColumns = @JoinColumn(name = "course_name"),
+            inverseJoinColumns = @JoinColumn(name = "student_name"))
+    private List<Student> studentsNames;
+
+    public List<Student> getStudentsNames() {
+        return studentsNames;
+    }
+
+    public void setStudentsNames(List<Student> studentsNames) {
+        this.studentsNames = studentsNames;
+    }
 
     public List<Subscription> getSubscriptions() {
         return subscriptions;
@@ -59,6 +73,14 @@ public class Course {
 
     public int getId() {
         return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public void setStudentsCount(Integer studentsCount) {
+        this.studentsCount = studentsCount;
     }
 
     public void setId(int id) {

@@ -1,3 +1,5 @@
+package Keys;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
@@ -5,18 +7,18 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class SubscriptionKey implements Serializable {
+public class LinkedPurchaseListKey implements Serializable {
 
-    @Column(name = "student_id")
+    @Column(name = "student_id", insertable = false, updatable = false)
     private int studentId;
 
-    @Column(name = "course_id")
+    @Column(name = "course_id", insertable = false, updatable = false)
     private int courseId;
 
-    public SubscriptionKey() {
+    public LinkedPurchaseListKey() {
     }
 
-    public SubscriptionKey(int studentId, int courseId) {
+    public LinkedPurchaseListKey(int studentId, int courseId) {
         this.studentId = studentId;
         this.courseId = courseId;
     }
@@ -41,8 +43,8 @@ public class SubscriptionKey implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SubscriptionKey key = (SubscriptionKey) o;
-        return studentId == key.studentId && courseId == key.courseId;
+        LinkedPurchaseListKey that = (LinkedPurchaseListKey) o;
+        return studentId == that.studentId && courseId == that.courseId;
     }
 
     @Override
