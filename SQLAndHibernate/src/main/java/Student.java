@@ -33,6 +33,16 @@ public class Student {
             inverseJoinColumns = @JoinColumn(name = "course_name"))
     private List<Course> courseNames;
 
+    public Student() {
+    }
+
+    public Student(Integer id, String name, int age, Date registrationDate) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.registrationDate = registrationDate;
+    }
+
     public List<Course> getCourseNames() {
         return courseNames;
     }

@@ -47,6 +47,21 @@ public class Course {
             inverseJoinColumns = @JoinColumn(name = "student_name"))
     private List<Student> studentsNames;
 
+    public Course() {
+    }
+
+    public Course(Integer id, String name, int duration, CourseType type, String description, Teacher teacher, Integer studentsCount, int price, float pricePerHour) {
+        this.id = id;
+        this.name = name;
+        this.duration = duration;
+        this.type = type;
+        this.description = description;
+        this.teacher = teacher;
+        this.studentsCount = studentsCount;
+        this.price = price;
+        this.pricePerHour = pricePerHour;
+    }
+
     public List<Student> getStudentsNames() {
         return studentsNames;
     }
