@@ -32,8 +32,9 @@ public class Main {
 
         System.out.println("Программа расчёта маршрутов метрополитена Санкт-Петербурга\n");
         scanner = new Scanner(System.in);
-        try {
-            for (; ; ) {
+
+        for (; ; ) {
+            try {
                 Station from = takeStation("Введите станцию отправления:");
                 logger.info(INPUT_HISTORY_MARKER, "Пользователь искал станцию отправления: {}", from);
 
@@ -46,9 +47,9 @@ public class Main {
 
                 System.out.println("Длительность: " +
                         RouteCalculator.calculateDuration(route) + " минут");
+            } catch (Exception ex) {
+                logger.error(ERRORS_MARKER, "Выброшено исключение:", ex);
             }
-        } catch (Exception ex) {
-            logger.error(ERRORS_MARKER, "Выброшено исключение:", ex);
         }
     }
 
