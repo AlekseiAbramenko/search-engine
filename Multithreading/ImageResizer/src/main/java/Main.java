@@ -11,8 +11,8 @@ public class Main {
     private static final long start = System.currentTimeMillis();
 
     public static void main(String[] args) {
-        String srcFolder = "C:\\Users\\Aleksei\\Skillbox\\Multithreading\\src\\main\\resources\\src";
-        String dstFolder = "C:\\Users\\Aleksei\\Skillbox\\Multithreading\\src\\main\\resources\\dst";
+        String srcFolder = "C:\\Users\\Aleksei\\Skillbox\\Multithreading\\ImageResizer\\src\\main\\resources\\src";
+        String dstFolder = "C:\\Users\\Aleksei\\Skillbox\\Multithreading\\ImageResizer\\src\\main\\resources\\dst";
 
         File srcDir = new File(srcFolder);
 
@@ -26,8 +26,7 @@ public class Main {
         }
 
         for (List<File> partition : partitions) {
-            imageResizer imageResizer = new imageResizer(partition, targetWidth, dstFolder, start);
-            imageResizer.start();
+            new imageResizer(partition, targetWidth, dstFolder, start).start();
         }
     }
 }
