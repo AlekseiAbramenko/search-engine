@@ -48,6 +48,6 @@ public class BookController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
-        return new ResponseEntity<>(optionalBook.get(), HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
