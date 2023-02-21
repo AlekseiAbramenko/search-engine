@@ -32,7 +32,9 @@ public class RedisStorage {
             System.out.println("Не удаётся подключиться к Redis");
             System.out.println(ex.getMessage());
         }
+        rKeys = redisson.getKeys();
         users = redisson.getScoredSortedSet(KEY);
+        rKeys.delete(KEY);
     }
 
     void userRegistration(int user_id) {
