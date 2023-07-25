@@ -5,9 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import searchengine.model.IndexModel;
+import searchengine.model.Lemma;
 import searchengine.model.Page;
 
 import searchengine.model.SiteModel;
+import searchengine.repository.IndexRepository;
+import searchengine.repository.LemmaRepository;
 import searchengine.repository.PageRepository;
 import searchengine.repository.SiteRepository;
 
@@ -15,6 +19,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
@@ -27,6 +32,8 @@ public class SiteParcer extends RecursiveAction {
     private final CopyOnWriteArraySet<String> linksList;
     private final PageRepository pageRepository;
     private final SiteRepository siteRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IndexRepository indexRepository;
 
     @Override
     public void compute() {
@@ -39,10 +46,13 @@ public class SiteParcer extends RecursiveAction {
                 Thread.sleep(500);
 
                 String path = link.replace(siteModel.getUrl(), "/");
-                Integer cod = doc.connection().response().statusCode();
+                int cod = doc.connection().response().statusCode();
                 String content = doc.html();
                 if(!pageRepository.existPage(path)) {
                     postPage(cod, content, path, siteModel);
+                    if(cod<399) {
+                        addLemmasToDB(content, siteModel, path);
+                    }
                 }
                 Elements elements = doc.select("a[abs:href^=" + link + "]");
                 elements.forEach(element -> {
@@ -50,7 +60,8 @@ public class SiteParcer extends RecursiveAction {
                     if (checkLink(link)) {
                         linksList.add(link);
                         SiteParcer task = new SiteParcer(
-                                siteModel, link, linksList, pageRepository, siteRepository);
+                                siteModel, link, linksList, pageRepository, siteRepository,
+                                lemmaRepository, indexRepository);
                         task.fork();
                         taskList.add(task);
                     }
@@ -81,6 +92,57 @@ public class SiteParcer extends RecursiveAction {
         pageRepository.save(page);
         siteModel.setStatusTime(LocalDateTime.now());
         siteRepository.save(siteModel);
+    }
+
+    private void addLemmasToDB(String content, SiteModel siteModel, String path) {
+        LemmasParcer lemmasParcer = new LemmasParcer();
+        try {
+            Map<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
+            lemmas.forEach((key, value) -> {
+                if(lemmaRepository.findLemmaByName(key).isPresent()) {
+                    increaseLemmasFrequency(key);
+                } else {
+                    postLemma(key, siteModel);
+                }
+                if(pageRepository.findPage(path).isPresent()
+                        && lemmaRepository.findLemmaByName(key).isPresent()) {
+                    Page page = pageRepository.findPage(path).get();
+                    Lemma lemma = lemmaRepository.findLemmaByName(key).get();
+                    if (indexRepository.existsIndex(page, lemma)) {
+                        indexRepository.updateIndex(value, page, lemma);
+                    } else {
+                        postIndex(page, lemma, value);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Transactional
+    private void postIndex(Page page, Lemma lemma, int rank) {
+        IndexModel index = new IndexModel();
+        index.setPage(page);
+        index.setLemma(lemma);
+        index.setRank(rank);
+        indexRepository.save(index);
+    }
+
+    @Transactional
+    private void postLemma(String name, SiteModel siteModel) {
+        Lemma lemma = new Lemma();
+        lemma.setLemma(name);
+        lemma.setFrequency(1);
+        lemma.setSite(siteModel);
+        lemmaRepository.save(lemma);
+    }
+
+    @Transactional
+    private void increaseLemmasFrequency(String name) {
+        Lemma lemma = lemmaRepository.findLemmaByName(name).get();
+        int newFrequency = lemma.getFrequency() + 1;
+        lemmaRepository.updateLemmasFrequency(newFrequency, lemma.getLemma());
     }
 
     public Document getConnection(String link) {

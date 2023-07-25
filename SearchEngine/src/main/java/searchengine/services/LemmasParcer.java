@@ -1,4 +1,4 @@
-package searchengine;
+package searchengine.services;
 
 import lombok.AllArgsConstructor;
 import org.apache.lucene.morphology.LuceneMorphology;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 
 @AllArgsConstructor
-public class Lemmatizator {
+public class LemmasParcer {
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
     public HashMap<String, Integer> countLemmasFromText(String html) throws IOException {
         LuceneMorphology morphology = new RussianLuceneMorphology();
@@ -68,20 +68,4 @@ public class Lemmatizator {
         }
         return false;
     }
-
-    //    public String getTextFromHtml(String path) {
-//        String html = getHtmlFile(path);
-//        return Jsoup.parse(html).text();
-//    }
-//
-//    public String getHtmlFile(String path) {
-//        StringBuilder builder = new StringBuilder();
-//        try {
-//            List<String> lines = Files.readAllLines(get(path));
-//            lines.forEach(line -> builder.append(line).append("\n"));
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
-//        return builder.toString();
-//    }
 }

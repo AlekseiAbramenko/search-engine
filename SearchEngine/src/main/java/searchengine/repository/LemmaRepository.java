@@ -6,11 +6,16 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Lemma;
+import searchengine.model.SiteModel;
 
 import java.util.Optional;
 
 @Repository
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
+    @Transactional
+    @Modifying
+    @Query("delete from Lemma l where l.site = ?1")
+    void deleteLemmasBySite(SiteModel site);
     @Transactional
     @Modifying
     @Query("update Lemma l set l.frequency = ?1 where l.lemma = ?2")

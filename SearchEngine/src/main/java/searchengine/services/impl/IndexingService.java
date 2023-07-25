@@ -6,7 +6,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.Lemmatizator;
+import searchengine.services.LemmasParcer;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.model.*;
@@ -36,12 +36,11 @@ public class IndexingService implements searchengine.services.IndexingService {
     private ExecutorService service;
     private final List<ForkJoinPool> poolsList = new ArrayList<>();
 
+    //todo: встроить код с индексации одной страницы в код getIndexing
+
     //todo: настроить зависимости (при удалении сайта, удалять его страницы)
 
-    //todo: теперь не работает индексация, из-за того, что я удаляю сайт и страницу,
-    // а они завязаны на индексе и леммах. Исправить это! Лучше, если через настройку зависимостей!!!
-
-    //todo: встроить код с индексации одной страницы в код getIndexing
+    //todo: настроить работу веб-интерфейса приложения
 
     //todo: написать тесты для разных частей проложения
 
@@ -54,8 +53,7 @@ public class IndexingService implements searchengine.services.IndexingService {
                 String url = site.getUrl();
                 String name = site.getName();
                 if (siteRepository.findSiteByUrl(url).isPresent()) {
-                    pageRepository.deletePagesBySiteId(getSiteModelFromDB(url));
-                    siteRepository.deleteSiteByUrl(url);
+                    cleanDB(url);
                 }
                 postSite(name, url);
                 SiteModel siteModel = getSiteModelFromDB(url);
@@ -63,7 +61,8 @@ public class IndexingService implements searchengine.services.IndexingService {
                 ForkJoinPool pool = new ForkJoinPool();
                 poolsList.add(pool);
                 pool.invoke(new SiteParcer(
-                        siteModel, url, linksList, pageRepository, siteRepository));
+                        siteModel, url, linksList, pageRepository, siteRepository,
+                        lemmaRepository, indexRepository));
                 if (pool.isShutdown() && siteModel.getStatus().equals(SiteStatus.INDEXING)) {
                     setFailedStatus(siteModel);
                 } else {
@@ -97,12 +96,12 @@ public class IndexingService implements searchengine.services.IndexingService {
         }
 
         Document doc = getConnection(link);
-        Integer cod = doc.connection().response().statusCode();
+        int cod = doc.connection().response().statusCode();
         String content = doc.html();
         String path = link.replace(siteUrl, "/");
 
         if(pageRepository.existPage(path)) {
-            cleanDB(path);
+            cleanDB(path); //метод переписан под getIndexing и не сработает как предполагалось изначально.
         }
 
         if (siteRepository.findSiteByUrl(siteUrl).isEmpty()) {
@@ -114,27 +113,21 @@ public class IndexingService implements searchengine.services.IndexingService {
         addLemmasToDB(content, siteModel, path);
     }
 
-    private void cleanDB(String path) {
-        Page page = pageRepository.findPage(path).get();
-        List<IndexModel> indexList = indexRepository.findLemmasByPage(page);
-        indexList.forEach(index -> {
-            Lemma lemma = index.getLemma();
-            if (lemma.getFrequency() > 1) {
-                String name = lemma.getLemma();
-                int newFrequency = lemma.getFrequency() - 1;
-                lemmaRepository.updateLemmasFrequency(newFrequency, name);
-            } else {
-                lemmaRepository.delete(lemma);
-            }
+    private void cleanDB(String url) {
+        SiteModel siteModel = getSiteModelFromDB(url);
+        List<Page> pageList = pageRepository.findPagesBySite(siteModel);
+        pageList.forEach(page -> {
+            indexRepository.deleteIndexByPage(page);
+            pageRepository.delete(page);
         });
-        indexRepository.deleteIndexByPage(page);
-        pageRepository.delete(page);
+        lemmaRepository.deleteLemmasBySite(siteModel);
+        siteRepository.deleteSiteByUrl(url);
     }
 
     private void addLemmasToDB(String content, SiteModel siteModel, String path) {
-        Lemmatizator lemmatizator = new Lemmatizator();
+        LemmasParcer lemmasParcer = new LemmasParcer();
         try {
-            Map<String, Integer> lemmas = lemmatizator.countLemmasFromText(content);
+            Map<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
                 if(lemmaRepository.findLemmaByName(key).isPresent()) {
                     increaseLemmasFrequency(key);

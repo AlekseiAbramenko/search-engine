@@ -14,19 +14,18 @@ import static java.nio.file.Paths.get;
 public class LemmaTest {
     public static void main(String[] args) throws IOException {
 
-
 //Задание 3:
 //        Lemmatizator lemmatizator = new Lemmatizator();
 //        Map<String, Integer> lemmas = lemmatizator.countLemmasFromText("");
 //        lemmas.forEach((key, value) -> System.out.println(key + " - " + value));
 
 ////Задание 2:
-        String text = "Повторное появление леопарда в Осетии позволяет предположить," +
-                " что леопард постоянно обитает в некоторых районах Северного Кавказа. " +
-                "Леопардов много не бывает. Леопарду все ни по чем. Леопарды опасны.";
-        Lemmatizator lemmatizator = new Lemmatizator();
-        Map<String, Integer> lemmas = lemmatizator.countLemmasFromText(text);
-        lemmas.forEach((key, value) -> System.out.println(key + " - " + value));
+//        String text = "Повторное появление леопарда в Осетии позволяет предположить," +
+//                " что леопард постоянно обитает в некоторых районах Северного Кавказа. " +
+//                "Леопардов много не бывает. Леопарду все ни по чем. Леопарды опасны.";
+//        Lemmatizator lemmatizator = new Lemmatizator();
+//        Map<String, Integer> lemmas = lemmatizator.countLemmasFromText(text);
+//        lemmas.forEach((key, value) -> System.out.println(key + " - " + value));
 //// Задание 1:
 //        getNormalForms("леса");
     }
