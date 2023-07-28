@@ -9,3 +9,6 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }
+//todo: настроить зависимости (при удалении сайта, удалять его страницы, леммы, индексы)
+
+//todo: написать тесты для разных частей проложения

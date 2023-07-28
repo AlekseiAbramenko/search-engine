@@ -12,6 +12,8 @@ import java.util.Optional;
 
 @Repository
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
+    @Query("select count(l) from Lemma l where l.site = ?1")
+    int lemmasCountBySite(SiteModel site);
     @Transactional
     @Modifying
     @Query("delete from Lemma l where l.site = ?1")

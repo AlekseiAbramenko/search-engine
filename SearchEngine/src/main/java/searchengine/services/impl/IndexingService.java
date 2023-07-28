@@ -36,14 +36,6 @@ public class IndexingService implements searchengine.services.IndexingService {
     private ExecutorService service;
     private final List<ForkJoinPool> poolsList = new ArrayList<>();
 
-    //todo: встроить код с индексации одной страницы в код getIndexing
-
-    //todo: настроить зависимости (при удалении сайта, удалять его страницы)
-
-    //todo: настроить работу веб-интерфейса приложения
-
-    //todo: написать тесты для разных частей проложения
-
     @Override
     @Transactional
     public void getIndexing() {
@@ -101,7 +93,7 @@ public class IndexingService implements searchengine.services.IndexingService {
         String path = link.replace(siteUrl, "/");
 
         if(pageRepository.existPage(path)) {
-            cleanDB(path); //метод переписан под getIndexing и не сработает как предполагалось изначально.
+            removePageInformation(path);
         }
 
         if (siteRepository.findSiteByUrl(siteUrl).isEmpty()) {
@@ -110,7 +102,26 @@ public class IndexingService implements searchengine.services.IndexingService {
 
         SiteModel siteModel = siteRepository.findSiteByUrl(siteUrl).get();
         postPage(path, cod, content, siteModel);
-        addLemmasToDB(content, siteModel, path);
+        if(cod<399) {
+            addLemmasToDB(content, siteModel, path);
+        }
+    }
+
+    private void removePageInformation(String path) {
+        Page page = pageRepository.findPage(path).get();
+        List<IndexModel> indexList = indexRepository.findLemmasByPage(page);
+        indexList.forEach(index -> {
+            Lemma lemma = index.getLemma();
+            if (lemma.getFrequency() > 1) {
+                String name = lemma.getLemma();
+                int newFrequency = lemma.getFrequency() - 1;
+                lemmaRepository.updateLemmasFrequency(newFrequency, name);
+            } else {
+                lemmaRepository.delete(lemma);
+            }
+        });
+        indexRepository.deleteIndexByPage(page);
+        pageRepository.delete(page);
     }
 
     private void cleanDB(String url) {
@@ -177,7 +188,7 @@ public class IndexingService implements searchengine.services.IndexingService {
     }
 
     @Transactional
-    public void postPage(String path, Integer cod, String content, SiteModel siteModel) {
+    private void postPage(String path, Integer cod, String content, SiteModel siteModel) {
         Page page = new Page();
         page.setPath(path);
         page.setCode(cod);
@@ -187,7 +198,7 @@ public class IndexingService implements searchengine.services.IndexingService {
     }
 
     @Transactional
-    public void postSite(String name, String url) {
+    private void postSite(String name, String url) {
         SiteModel siteModel = new SiteModel();
         siteModel.setName(name);
         siteModel.setUrl(url);
@@ -197,20 +208,20 @@ public class IndexingService implements searchengine.services.IndexingService {
         siteRepository.save(siteModel);
     }
 
-    public SiteModel getSiteModelFromDB(String url) {
+    private SiteModel getSiteModelFromDB(String url) {
         Optional<SiteModel> siteModel = siteRepository.findSiteByUrl(url);
         return siteModel.orElse(null);
     }
 
     @Transactional
-    public void setIndexedStatus(SiteModel siteModel) {
+    private void setIndexedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.INDEXED);
         siteModel.setStatusTime(LocalDateTime.now());
         siteRepository.save(siteModel);
     }
 
     @Transactional
-    public void setFailedStatus(SiteModel siteModel) {
+    private void setFailedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.FAILED);
         siteModel.setLastError("Индексация прервана пользователем");
         siteModel.setStatusTime(LocalDateTime.now());
@@ -239,7 +250,7 @@ public class IndexingService implements searchengine.services.IndexingService {
                 && !link.contains(".php");
     }
 
-    public Document getConnection(String link) {
+    private Document getConnection(String link) {
         try {
             return Jsoup.connect(link)
                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")

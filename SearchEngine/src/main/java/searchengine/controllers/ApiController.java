@@ -9,6 +9,8 @@ import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.IndexingService;
 import searchengine.services.StatisticsService;
 
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -43,12 +45,15 @@ public class ApiController {
 
     @PostMapping("/indexPage")
     public ResponseEntity indexPage(@RequestBody String link) {
-        if(indexingService.checkLink(link)) {
-            indexingService.indexingPage(link);
+        String decodeLink = java.net.URLDecoder.decode(link, StandardCharsets.UTF_8);
+        String url = "url=";
+        String result = decodeLink.substring(url.length());
+        if(indexingService.checkLink(result)) {
+            indexingService.indexingPage(result);
             return ResponseEntity.ok(new IndexingResponseTrue());
         } else {
             return ResponseEntity.ok(new IndexingResponseFalse(
-                    "Данная страница находится за пределами сайтов, " +
+                    "Данная страница находится за пределами сайтов," +
                             "указанных в конфигурационном файле"));
         }
     }
