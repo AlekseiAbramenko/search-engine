@@ -25,8 +25,6 @@ public interface PageRepository extends CrudRepository<Page, Integer> {
     void deletePageByUrl(String path);
     @Query("select p from Page p where upper(p.path) = upper(?1)")
     Optional<Page> findSiteByPage(String path);
-    @Query("select (count(p) > 0) from Page p where p.path = ?1")
-    boolean existPage(String path);
     @Transactional
     @Modifying
     @Query("delete from Page p where p.site = ?1")

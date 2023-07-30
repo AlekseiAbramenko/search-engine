@@ -18,8 +18,8 @@ import searchengine.repository.SiteRepository;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
@@ -48,7 +48,7 @@ public class SiteParcer extends RecursiveAction {
                 String path = link.replace(siteModel.getUrl(), "/");
                 int cod = doc.connection().response().statusCode();
                 String content = doc.html();
-                if(!pageRepository.existPage(path)) {
+                if(pageRepository.findPage(path).isEmpty()) {
                     postPage(cod, content, path, siteModel);
                     if(cod<399) {
                         addLemmasToDB(content, siteModel, path);
@@ -97,7 +97,7 @@ public class SiteParcer extends RecursiveAction {
     private void addLemmasToDB(String content, SiteModel siteModel, String path) {
         LemmasParcer lemmasParcer = new LemmasParcer();
         try {
-            Map<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
+            HashMap<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
                 if(lemmaRepository.findLemmaByName(key).isPresent()) {
                     increaseLemmasFrequency(key);

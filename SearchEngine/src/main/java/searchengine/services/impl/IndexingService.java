@@ -92,7 +92,7 @@ public class IndexingService implements searchengine.services.IndexingService {
         String content = doc.html();
         String path = link.replace(siteUrl, "/");
 
-        if(pageRepository.existPage(path)) {
+        if(pageRepository.findPage(path).isPresent()) {
             removePageInformation(path);
         }
 
@@ -110,6 +110,7 @@ public class IndexingService implements searchengine.services.IndexingService {
     private void removePageInformation(String path) {
         Page page = pageRepository.findPage(path).get();
         List<IndexModel> indexList = indexRepository.findLemmasByPage(page);
+        indexRepository.deleteIndexByPage(page);
         indexList.forEach(index -> {
             Lemma lemma = index.getLemma();
             if (lemma.getFrequency() > 1) {
@@ -120,7 +121,6 @@ public class IndexingService implements searchengine.services.IndexingService {
                 lemmaRepository.delete(lemma);
             }
         });
-        indexRepository.deleteIndexByPage(page);
         pageRepository.delete(page);
     }
 
