@@ -12,7 +12,7 @@ import java.util.Locale;
 
 @AllArgsConstructor
 public class LemmasParcer {
-    private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
+    private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
     public HashMap<String, Integer> countLemmasFromText(String html) throws IOException {
         LuceneMorphology morphology = new RussianLuceneMorphology();
         HashMap<String, Integer> lemmas = new HashMap<>();

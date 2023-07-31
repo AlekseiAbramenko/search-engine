@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class IndexingResponseTrue {
-    private boolean result = true;
+    private final boolean result = true;
 }

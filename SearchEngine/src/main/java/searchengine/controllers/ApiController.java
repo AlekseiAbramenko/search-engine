@@ -57,4 +57,10 @@ public class ApiController {
                             "указанных в конфигурационном файле"));
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity search(@RequestBody String query) {
+
+        return ResponseEntity.ok(new IndexingResponseTrue());//заменить
+    }
 }

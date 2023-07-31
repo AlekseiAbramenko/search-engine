@@ -13,6 +13,10 @@ import java.util.List;
 
 @Repository
 public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
+    @Transactional
+    @Modifying
+    @Query("delete from IndexModel i where i.lemma = ?1")
+    int deleteIndexByLemma(Lemma lemma);
     @Query("select (count(i) > 0) from IndexModel i where i.page = ?1 and i.lemma = ?2")
     boolean existsIndex(Page page, Lemma lemma);
     @Transactional

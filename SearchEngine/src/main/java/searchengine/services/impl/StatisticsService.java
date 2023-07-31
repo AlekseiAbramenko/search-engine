@@ -28,8 +28,6 @@ public class StatisticsService implements searchengine.services.StatisticsServic
     private SiteRepository siteRepository;
     @Autowired
     private LemmaRepository lemmaRepository;
-    @Autowired
-    private IndexRepository indexRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
