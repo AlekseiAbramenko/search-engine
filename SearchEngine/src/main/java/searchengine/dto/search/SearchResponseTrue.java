@@ -6,5 +6,5 @@ import lombok.Data;
 public class SearchResponseTrue {
     private boolean result = true;
     private int count;
-    private DataModel[] data;
+    private SearchData[] data;
 }

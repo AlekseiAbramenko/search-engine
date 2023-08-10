@@ -33,7 +33,7 @@ public class StatisticsService implements searchengine.services.StatisticsServic
     public StatisticsResponse getStatistics() {
         TotalStatistics total = new TotalStatistics();
         total.setSites(siteRepository.sitesCount());
-        total.setIndexing(true);//???
+        total.setIndexing(true);
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
         List<SiteModel> sitesList = siteRepository.gelAllSites();

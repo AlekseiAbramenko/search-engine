@@ -7,5 +7,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SearchResponseFalse {
     private final boolean result = false;
-    private final String error = "";
+    private final String error;
 }

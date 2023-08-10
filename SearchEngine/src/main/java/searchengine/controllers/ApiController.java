@@ -5,9 +5,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingResponseFalse;
 import searchengine.dto.indexing.IndexingResponseTrue;
+import searchengine.dto.search.SearchResponseFalse;
+import searchengine.dto.search.SearchResponseTrue;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.services.IndexingService;
-import searchengine.services.StatisticsService;
+import searchengine.services.impl.IndexingService;
+import searchengine.services.impl.StatisticsService;
+import searchengine.services.impl.SearchingService;
 
 import java.nio.charset.StandardCharsets;
 
@@ -17,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 public class ApiController {
     private final StatisticsService statisticsService;
     private final IndexingService indexingService;
+    private final SearchingService searchingService;
 
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics() {
@@ -60,7 +64,8 @@ public class ApiController {
 
     @GetMapping("/search")
     public ResponseEntity search(@RequestBody String query) {
-
-        return ResponseEntity.ok(new IndexingResponseTrue());//заменить
+        //todo: добавить параметры: site, offset, limit
+//        System.out.println(query);
+        return ResponseEntity.ok(searchingService.getSearching(query));
     }
 }

@@ -10,9 +10,14 @@ import searchengine.model.Lemma;
 import searchengine.model.Page;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
+    @Query("select i from IndexModel i where i.page = ?1 and i.lemma = ?2")
+    Optional<IndexModel> findIndex(Page page, Lemma lemma);
+    @Query("select i from IndexModel i where i.lemma = ?1")
+    List<IndexModel> findPagesByLemma(Lemma lemma);
     @Transactional
     @Modifying
     @Query("delete from IndexModel i where i.lemma = ?1")
