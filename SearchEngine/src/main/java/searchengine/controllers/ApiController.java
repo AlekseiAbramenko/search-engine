@@ -64,7 +64,7 @@ public class ApiController {
 
     @GetMapping("/search")
     public ResponseEntity search(@RequestBody String query) {
-        //todo: добавить параметры: site, offset, limit
+
 //        System.out.println(query);
         return ResponseEntity.ok(searchingService.getSearching(query));
     }

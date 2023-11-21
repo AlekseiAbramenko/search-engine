@@ -58,7 +58,7 @@ public class StatisticsService implements searchengine.services.StatisticsServic
         data.setTotal(total);
         data.setDetailed(detailed);
         response.setStatistics(data);
-        response.setResult(true);//??
+        response.setResult(true);
         return response;
     }
 

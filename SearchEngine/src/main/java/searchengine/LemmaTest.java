@@ -23,8 +23,9 @@ public class LemmaTest {
 //        LemmasParcer lemmatizator = new LemmasParcer();
 //        Map<String, Integer> lemmas = lemmatizator.countLemmasFromText(text);
 //        lemmas.forEach((key, value) -> System.out.println(key + " - " + value));
-//// Задание 1:
-//        getNormalForms("леса");
+// Задание 1:
+        getNormalForms("переданном");
+
     }
 
     public static void getNormalForms(String word) throws IOException {
