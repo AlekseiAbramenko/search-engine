@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingResponseFalse;
 import searchengine.dto.indexing.IndexingResponseTrue;
+import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchResponseFalse;
-import searchengine.dto.search.SearchResponseTrue;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.impl.IndexingService;
 import searchengine.services.impl.StatisticsService;
@@ -63,9 +63,18 @@ public class ApiController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity search(@RequestBody String query) {
-
-//        System.out.println(query);
-        return ResponseEntity.ok(searchingService.getSearching(query));
+    public ResponseEntity search(@RequestParam ("query") String query,
+                                 @RequestParam ("offset") int offset,
+                                 @RequestParam ("limit") int limit,
+                                 @RequestParam (value = "site", required = false) String site) {
+        RequestParameters requestParam = new RequestParameters(query, site, offset, limit);
+        if(query.length() == 0) {
+            return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос"));
+        } else {
+            return ResponseEntity.ok(searchingService.getSearching(requestParam));
+        }
+        //todo: сюда добавить понятных ответов на возможные ошибки через switch case,
+        // например, если индексация ещё идет
+        // или не найдено ни одной страницы (проверить заведомо отсутствующим словом)
     }
 }

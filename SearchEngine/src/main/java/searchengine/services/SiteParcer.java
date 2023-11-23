@@ -45,7 +45,12 @@ public class SiteParcer extends RecursiveAction {
                 Document doc = getConnection(link);
                 Thread.sleep(500);
 
-                String path = link.replace(siteModel.getUrl(), "/");
+                String path;
+                if(link.equals(siteModel.getUrl())) {
+                    path = "/";
+                } else {
+                    path = link.replace(siteModel.getUrl(), "");
+                }
                 int cod = doc.connection().response().statusCode();
                 String content = doc.html();
                 if(pageRepository.findPage(path).isEmpty()) {

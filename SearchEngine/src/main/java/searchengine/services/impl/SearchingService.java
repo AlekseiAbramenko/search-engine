@@ -9,6 +9,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponseTrue;
 import searchengine.model.IndexModel;
@@ -31,9 +32,9 @@ public class SearchingService implements searchengine.services.SearchingService 
     private IndexRepository indexRepository;
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
 
-    public SearchResponseTrue getSearching(String query) {
+    public SearchResponseTrue getSearching(RequestParameters requestParam) {
         SearchResponseTrue response = new SearchResponseTrue();
-        Map<String, String> queryLemmasMap = lemmasParser(query);
+        Map<String, String> queryLemmasMap = lemmasParser(requestParam.getQuery());
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
 
         queryLemmasMap.forEach((normalWord, word) -> {
@@ -44,10 +45,10 @@ public class SearchingService implements searchengine.services.SearchingService 
         });
 
         Map<Lemma, Integer> sortedLemmasMap = getSortedLemmasMap(lemmasFrequency);
-        List<Page> pagesFinalList = getPagesList(sortedLemmasMap);
+        List<Page> pagesFinalList = getPagesList(sortedLemmasMap, requestParam.getSite());
         Map<Page, Float> relevanceMap = getRelevance(pagesFinalList, sortedLemmasMap);
         List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
-        int count = searchDataList.size();
+        int count = requestParam.getLimit();
         SearchData[] allData = new SearchData[count];
 
         for (int i = 0; i < searchDataList.size(); i++) {
@@ -253,25 +254,25 @@ public class SearchingService implements searchengine.services.SearchingService 
         }
     }
 
-    private List<Page> getPagesList(Map<Lemma, Integer> sortedLemmasMap) {
-//        sortedLemmasMap.forEach((key, value) -> System.out.println(key.getLemma() + " " + value));//test
+    private List<Page> getPagesList(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         Lemma firstLemma = sortedLemmasMap.entrySet().iterator().next().getKey();
-//        System.out.println("first lemma: " + firstLemma.getLemma()); //test
-        List<IndexModel> indexes = indexRepository.findPagesByLemma(firstLemma);
-//        indexes.forEach(indexModel -> System.out.println(indexModel.getId()));
+        List<IndexModel> indexes;
+
+        if(!(siteUrl==null)) {
+            indexes = indexRepository.findPagesByLemmaBySite(firstLemma, siteUrl);
+        } else {
+            indexes = indexRepository.findPagesByLemma(firstLemma);
+        }
+
         List<Page> pages = new ArrayList<>();
         indexes.forEach(index -> pages.add(index.getPage()));
-//        pages.forEach(page -> System.out.println(page.getId()));
-//        System.out.println("pages size: " + pages.size());
         List<Page> pagesFinalList = new ArrayList<>(pages);
         Map<Lemma, Integer> sortedMapWithoutFirstLemma = new LinkedHashMap<>(sortedLemmasMap);
         sortedMapWithoutFirstLemma.remove(firstLemma);
-//        System.out.println("list size :" + pagesFinalList.size());//test
         sortedMapWithoutFirstLemma.keySet().forEach(lemma -> {
             pages.forEach(page -> {
                 if (pagesFinalList.contains(page) && !indexRepository.existsIndex(page, lemma)) {
                     pagesFinalList.remove(page);
-//                    System.out.println("Промежуточный размер листа: " + pagesFinalList.size());
                 }
             });
         });

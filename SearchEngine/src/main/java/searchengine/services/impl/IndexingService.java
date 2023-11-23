@@ -90,7 +90,13 @@ public class IndexingService implements searchengine.services.IndexingService {
         Document doc = getConnection(link);
         int cod = doc.connection().response().statusCode();
         String content = doc.html();
-        String path = link.replace(siteUrl, "/");
+        String path;
+
+        if(link.equals(siteUrl)) {
+            path = "/";
+        } else {
+            path = link.replace(siteUrl, "");
+        }
 
         if(pageRepository.findPage(path).isPresent()) {
             removePageInformation(path);

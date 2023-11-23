@@ -14,6 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
+    @Query("select i from IndexModel i where i.lemma = ?1 and i.page.site.url = ?2")
+    List<IndexModel> findPagesByLemmaBySite(Lemma lemma, String url);
     @Query("select i from IndexModel i where i.page = ?1 and i.lemma = ?2")
     Optional<IndexModel> findIndex(Page page, Lemma lemma);
     @Query("select i from IndexModel i where i.lemma = ?1")
@@ -34,4 +36,6 @@ public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
     @Modifying
     @Query("update IndexModel i set i.rank = ?1 where i.page = ?2 and i.lemma = ?3")
     void updateIndex(float rank, Page page, Lemma lemma);
+
+
 }
