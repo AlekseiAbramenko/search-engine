@@ -70,11 +70,19 @@ public class ApiController {
         RequestParameters requestParam = new RequestParameters(query, site, offset, limit);
         if(query.length() == 0) {
             return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос"));
-        } else {
+        }
+        if(!(indexingService.getService() == null)) {
+            return ResponseEntity.ok(new SearchResponseFalse("Индексация ещё идёт. " +
+                    "Дождитесь её завершения и повторите запрос."));
+        } if (searchingService.getSearching(requestParam) == null) {
+            return ResponseEntity.ok(new SearchResponseFalse("Вернули null"));
+        } if(searchingService.getSearching(requestParam).getCount() == 0) {
+            return ResponseEntity.ok(new SearchResponseFalse("getCount = 0"));
+        }
+        else {
             return ResponseEntity.ok(searchingService.getSearching(requestParam));
         }
         //todo: сюда добавить понятных ответов на возможные ошибки через switch case,
-        // например, если индексация ещё идет
         // или не найдено ни одной страницы (проверить заведомо отсутствующим словом)
     }
 }

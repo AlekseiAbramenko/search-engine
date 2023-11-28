@@ -48,10 +48,10 @@ public class SearchingService implements searchengine.services.SearchingService 
         List<Page> pagesFinalList = getPagesList(sortedLemmasMap, requestParam.getSite());
         Map<Page, Float> relevanceMap = getRelevance(pagesFinalList, sortedLemmasMap);
         List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
-        int count = requestParam.getLimit();
+        int count = Math.min(requestParam.getLimit(), searchDataList.size());
         SearchData[] allData = new SearchData[count];
 
-        for (int i = 0; i < searchDataList.size(); i++) {
+        for (int i = 0; i < count; i++) {
             allData[i] = searchDataList.get(i);
         }
         response.setCount(count);
@@ -84,10 +84,12 @@ public class SearchingService implements searchengine.services.SearchingService 
         String text = Jsoup.parse(content).text();
         Map<String, String> textLemmasMap = lemmasParser(text);//нормальное слово, слово в тексте
         Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, textLemmasMap); //слово из запроса; слово из запроса + его словоформы в тексте + все с большой буквы
+        Map<String, Set<String>> fatEqualsWordsMap = getFatEqualsWordsMap(equalsWordsMap);//все словоформы жирным шрифтом
         String fatWordsText = getFatWordsText(text, equalsWordsMap); //слова из запроса в тексте жирным шрифтом
         String[] sentences = fatWordsText.split("[.,?!]");//текст разбитый на предложения
-        List<String> sentencesList = Arrays.stream(sentences).filter(s -> s.contains("<b>")).toList();//только предложения, где слова выделены жирным
-        Map<String, Set<String>> fatEqualsWordsMap = getFatEqualsWordsMap(equalsWordsMap);//все словоформы жирным шрифтом
+        List<String> shortSentences = getShortSentencesList(sentences);//длинные предложения разбитые на короткие
+        List<String> sentencesList = shortSentences.stream().filter(s -> s.contains("<b>")).toList();//только предложения, где слова выделены жирным
+
 //считаем количество вхождений искомых слов в предложениях
         int i = fatEqualsWordsMap.size(); //количество слов в запросе
         AtomicReference<String> snippet = new AtomicReference<>("");
@@ -95,13 +97,14 @@ public class SearchingService implements searchengine.services.SearchingService 
         sentencesList.forEach(sentence -> {
             AtomicInteger j = new AtomicInteger();//счетчик найденных слов в предложении
             fatEqualsWordsMap.forEach((word, wordsList) -> {
-                wordsList.forEach(w -> {
+                for (String w : wordsList) {
                     if (sentence.contains(w)) {
                         j.addAndGet(1);
+                        break;
                     }
-                });
+                }
             });
-            if(j.get() == i) {
+            if (j.get() == i) {
                 snippet.set(sentence);
             } else {
                 sentencesMap.put(sentence, j.intValue());//предложение - количество совпадений
@@ -116,22 +119,76 @@ public class SearchingService implements searchengine.services.SearchingService 
             String maxWordsSentence = maxEntry.getKey();
             snippet.set("..." + maxWordsSentence);
             Map<String, Set<String>> lastWordsMap = getLastWordsMap(fatEqualsWordsMap, maxWordsSentence);//слова, которые нужно найти и склеить
+
 //ищем оставшиеся слова
+            //todo: отсюда в отдельный метод: возвращием строку и склеиваем со сниппетом
             lastWordsMap.forEach((word, wordsSet) -> {
-                wordsSet.forEach(w -> {
-                    sentencesList.forEach(sentence -> {
+                for (String w : wordsSet) {
+                    AtomicInteger count = new AtomicInteger();
+                    for (String sentence : sentencesList) {
                         if (sentence.contains(w)) {
-                            int start = sentence.indexOf(w) - 20;
-                            int end = start + w.length() + 20;
+                            int start = sentence.indexOf(w);
+                            if (start >= 20) {
+                                start -= 20;
+                            } else {
+                                start = 0;
+                            }
+                            int end = start + w.length();
+                            end += Math.min((sentence.length() - end), 20);
                             String sub = "..." + sentence.substring(start, end) + "...";
                             snippet.set(snippet + sub);
+                            count.addAndGet(1);
+                            break;
                         }
-                    });
-                });
+                    }
+                    if (count.get() > 0) {
+                        break;
+                    }
+                }
             });
-
             return String.valueOf(snippet);
         }
+    }
+
+    private List<String> getShortSentencesList(String[] sentences) {
+        List<String> shortSentences = new ArrayList<>();
+
+        for (String sentence : sentences) {
+            if(sentence.length() > 150) {
+                List<String> sentList = getShortSentences(sentence);
+                shortSentences.addAll(sentList);
+            } else {
+                shortSentences.add(sentence);
+            }
+        }
+        return shortSentences;
+    }
+
+    private List<String> getShortSentences(String sentence) {
+        String[] arrWords = sentence.split(" ");
+        List<String> shortSentences = new ArrayList<>();
+
+        StringBuilder stringBuilder = new StringBuilder();
+        int count = 0;
+        int index = 0;
+        int length = arrWords.length;
+        int maxLength = 150;
+
+        while (index != length) {
+            if(count + arrWords[index].length() <= maxLength) {
+                count += arrWords[index].length() + 1;
+                stringBuilder.append(arrWords[index]).append(" ");
+                index++;
+            } else {
+                shortSentences.add(stringBuilder.toString());
+                stringBuilder = new StringBuilder();
+                count = 0;
+            }
+        }
+        if(stringBuilder.length() > 0) {
+            shortSentences.add(stringBuilder.toString());
+        }
+        return shortSentences;
     }
 
     private Map<String, Set<String>> getLastWordsMap(Map<String, Set<String>> fatEqualsWordsMap, String maxWordsSentence) {
