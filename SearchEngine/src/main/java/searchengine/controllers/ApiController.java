@@ -69,20 +69,16 @@ public class ApiController {
                                  @RequestParam (value = "site", required = false) String site) {
         RequestParameters requestParam = new RequestParameters(query, site, offset, limit);
         if(query.length() == 0) {
-            return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос"));
+            return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос."));
         }
-        if(!(indexingService.getService() == null)) {
+        if(indexingService.getService() != null) {
             return ResponseEntity.ok(new SearchResponseFalse("Индексация ещё идёт. " +
-                    "Дождитесь её завершения и повторите запрос."));
-        } if (searchingService.getSearching(requestParam) == null) {
-            return ResponseEntity.ok(new SearchResponseFalse("Вернули null"));
+                    "Дождитесь её завершения."));
         } if(searchingService.getSearching(requestParam).getCount() == 0) {
-            return ResponseEntity.ok(new SearchResponseFalse("getCount = 0"));
+            return ResponseEntity.ok(new SearchResponseFalse("Поиск не дал результатов."));
         }
         else {
             return ResponseEntity.ok(searchingService.getSearching(requestParam));
         }
-        //todo: сюда добавить понятных ответов на возможные ошибки через switch case,
-        // или не найдено ни одной страницы (проверить заведомо отсутствующим словом)
     }
 }

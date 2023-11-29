@@ -1,8 +1,8 @@
 package searchengine.services;
 
 import searchengine.dto.search.RequestParameters;
-import searchengine.dto.search.SearchResponseTrue;
+import searchengine.dto.search.SearchResponse;
 
 public interface SearchingService {
-    SearchResponseTrue getSearching(RequestParameters requestParam);
+    SearchResponse getSearching(RequestParameters requestParam);
 }

@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchData;
-import searchengine.dto.search.SearchResponseTrue;
+import searchengine.dto.search.SearchResponse;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
@@ -32,8 +32,8 @@ public class SearchingService implements searchengine.services.SearchingService 
     private IndexRepository indexRepository;
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
 
-    public SearchResponseTrue getSearching(RequestParameters requestParam) {
-        SearchResponseTrue response = new SearchResponseTrue();
+    public SearchResponse getSearching(RequestParameters requestParam) {
+        SearchResponse response = new SearchResponse();
         Map<String, String> queryLemmasMap = lemmasParser(requestParam.getQuery());
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
 
@@ -44,18 +44,23 @@ public class SearchingService implements searchengine.services.SearchingService 
             }
         });
 
-        Map<Lemma, Integer> sortedLemmasMap = getSortedLemmasMap(lemmasFrequency);
-        List<Page> pagesFinalList = getPagesList(sortedLemmasMap, requestParam.getSite());
-        Map<Page, Float> relevanceMap = getRelevance(pagesFinalList, sortedLemmasMap);
-        List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
-        int count = Math.min(requestParam.getLimit(), searchDataList.size());
-        SearchData[] allData = new SearchData[count];
+        if (lemmasFrequency.size() == 0) {
+            response.setData(null);
+            response.setCount(0);
+        } else {
+            Map<Lemma, Integer> sortedLemmasMap = getSortedLemmasMap(lemmasFrequency);
+            List<Page> pagesFinalList = getPagesList(sortedLemmasMap, requestParam.getSite());
+            Map<Page, Float> relevanceMap = getRelevance(pagesFinalList, sortedLemmasMap);
+            List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
+            int count = Math.min(requestParam.getLimit(), searchDataList.size());
+            SearchData[] allData = new SearchData[count];
 
-        for (int i = 0; i < count; i++) {
-            allData[i] = searchDataList.get(i);
+            for (int i = 0; i < count; i++) {
+                allData[i] = searchDataList.get(i);
+            }
+            response.setCount(count);
+            response.setData(allData);
         }
-        response.setCount(count);
-        response.setData(allData);
         return response;
     }
 
