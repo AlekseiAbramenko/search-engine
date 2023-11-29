@@ -66,7 +66,7 @@ public class SearchingService implements searchengine.services.SearchingService 
             pageData.setSite(key.getSite().getUrl());
             pageData.setSiteName(key.getSite().getName());
             pageData.setUri(key.getPath());
-            pageData.setTitle(getTitle(key.getContent()));
+            pageData.setTitle(getTitle(key.getContent(), queryLemmasMap));
             pageData.setSnippet(getSnippet(key.getContent(), queryLemmasMap));
             pageData.setRelevance(value);
             searchDataList.add(pageData);
@@ -74,9 +74,13 @@ public class SearchingService implements searchengine.services.SearchingService 
         return searchDataList;
     }
 
-    private String getTitle(String content) {
+    private String getTitle(String content, Map<String, String> queryLemmasMap) {
         Document doc = Jsoup.parse(content);
-        return doc.title();
+        String text = doc.title();
+        Map<String, String> titleLemmasMap = lemmasParser(text);
+        Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, titleLemmasMap);
+
+        return getFatWordsText(text, equalsWordsMap);
     }
 
     @SneakyThrows
@@ -89,11 +93,26 @@ public class SearchingService implements searchengine.services.SearchingService 
         String[] sentences = fatWordsText.split("[.,?!]");//текст разбитый на предложения
         List<String> shortSentences = getShortSentencesList(sentences);//длинные предложения разбитые на короткие
         List<String> sentencesList = shortSentences.stream().filter(s -> s.contains("<b>")).toList();//только предложения, где слова выделены жирным
-
-//считаем количество вхождений искомых слов в предложениях
         int i = fatEqualsWordsMap.size(); //количество слов в запросе
         AtomicReference<String> snippet = new AtomicReference<>("");
-        Map<String, Integer> sentencesMap = new HashMap<>();//предложение - количество вхождений
+        Map<String, Integer> sentencesMap = getSentencesMap(sentencesList, fatEqualsWordsMap);//предложение - количество вхождений слов из запроса
+        Map.Entry<String, Integer> maxEntry =
+                Collections.max(sentencesMap.entrySet(), Map.Entry.comparingByValue());
+        String maxWordsSentence = maxEntry.getKey();
+
+        if (maxEntry.getValue() == i) {
+            snippet.set(maxWordsSentence);
+        } else {
+            Map<String, Set<String>> lastWordsMap = getLastWordsMap(fatEqualsWordsMap, maxWordsSentence);//слова, которые нужно найти и склеить
+            String snippetParts = getSnippetParts(lastWordsMap, sentencesList);
+            snippet.set("..." + maxWordsSentence + snippetParts);
+        }
+        return String.valueOf(snippet);
+    }
+
+    private Map<String, Integer> getSentencesMap(List<String> sentencesList,
+                                                 Map<String, Set<String>> fatEqualsWordsMap) {
+        Map<String, Integer> sentencesMap = new HashMap<>();
         sentencesList.forEach(sentence -> {
             AtomicInteger j = new AtomicInteger();//счетчик найденных слов в предложении
             fatEqualsWordsMap.forEach((word, wordsList) -> {
@@ -104,52 +123,38 @@ public class SearchingService implements searchengine.services.SearchingService 
                     }
                 }
             });
-            if (j.get() == i) {
-                snippet.set(sentence);
-            } else {
-                sentencesMap.put(sentence, j.intValue());//предложение - количество совпадений
-            }
+            sentencesMap.put(sentence, j.intValue());//предложение - количество совпадений
         });
-
-        if (snippet.get().length() > 0) {
-            return String.valueOf(snippet);
-        } else {
-            Map.Entry<String, Integer> maxEntry =
-                    Collections.max(sentencesMap.entrySet(), Map.Entry.comparingByValue());
-            String maxWordsSentence = maxEntry.getKey();
-            snippet.set("..." + maxWordsSentence);
-            Map<String, Set<String>> lastWordsMap = getLastWordsMap(fatEqualsWordsMap, maxWordsSentence);//слова, которые нужно найти и склеить
-
-//ищем оставшиеся слова
-            //todo: отсюда в отдельный метод: возвращием строку и склеиваем со сниппетом
-            lastWordsMap.forEach((word, wordsSet) -> {
-                for (String w : wordsSet) {
-                    AtomicInteger count = new AtomicInteger();
-                    for (String sentence : sentencesList) {
-                        if (sentence.contains(w)) {
-                            int start = sentence.indexOf(w);
-                            if (start >= 20) {
-                                start -= 20;
-                            } else {
-                                start = 0;
-                            }
-                            int end = start + w.length();
-                            end += Math.min((sentence.length() - end), 20);
-                            String sub = "..." + sentence.substring(start, end) + "...";
-                            snippet.set(snippet + sub);
-                            count.addAndGet(1);
-                            break;
+        return sentencesMap;
+    }
+    private String getSnippetParts(Map<String, Set<String>> lastWordsMap, List<String> sentencesList) {
+        StringBuilder stringBuilder = new StringBuilder();
+        lastWordsMap.forEach((word, wordsSet) -> {
+            for (String w : wordsSet) {
+                AtomicInteger count = new AtomicInteger();
+                for (String sentence : sentencesList) {
+                    if (sentence.contains(w)) {
+                        int start = sentence.indexOf(w);
+                        if (start >= 20) {
+                            start -= 20;
+                        } else {
+                            start = 0;
                         }
-                    }
-                    if (count.get() > 0) {
+                        int end = start + w.length();
+                        end += Math.min((sentence.length() - end), 20);
+                        String sub = "..." + sentence.substring(start, end) + "...";
+                        stringBuilder.append(sub);
+                        count.addAndGet(1);
                         break;
                     }
                 }
-            });
-            return String.valueOf(snippet);
-        }
+                if (count.get() > 0) {
+                    break;
+                }
+            }
+        });
+        return stringBuilder.toString();
     }
-
     private List<String> getShortSentencesList(String[] sentences) {
         List<String> shortSentences = new ArrayList<>();
 
@@ -163,7 +168,6 @@ public class SearchingService implements searchengine.services.SearchingService 
         }
         return shortSentences;
     }
-
     private List<String> getShortSentences(String sentence) {
         String[] arrWords = sentence.split(" ");
         List<String> shortSentences = new ArrayList<>();
@@ -190,7 +194,6 @@ public class SearchingService implements searchengine.services.SearchingService 
         }
         return shortSentences;
     }
-
     private Map<String, Set<String>> getLastWordsMap(Map<String, Set<String>> fatEqualsWordsMap, String maxWordsSentence) {
         Map<String, Set<String>> lastWordsMap = new HashMap<>();//слова, которые нужно найти и склеить
         fatEqualsWordsMap.forEach((queryWord, wordsSet) -> {
@@ -208,7 +211,6 @@ public class SearchingService implements searchengine.services.SearchingService 
 
         return lastWordsMap;
     }
-
     private Map<String, Set<String>> getFatEqualsWordsMap(Map<String, Set<String>> equalsWordsMap) {
         Map<String, Set<String>> fatEqualsWordsMap = new HashMap<>();
         equalsWordsMap.forEach((word, wordsList) -> {
@@ -222,7 +224,6 @@ public class SearchingService implements searchengine.services.SearchingService 
 
         return fatEqualsWordsMap;
     }
-
     private String getFatWordsText(String text, Map<String, Set<String>> equalsWordsMap) {
         List<String> equalsWordsList = new ArrayList<>();
         equalsWordsMap.forEach((word, wordsList) -> {
@@ -239,9 +240,7 @@ public class SearchingService implements searchengine.services.SearchingService 
         }
         return StringUtils.replaceEach(text, searchList, replacementList);
     }
-
-    private Map<String, Set<String>> getEqualsWordsMap(Map<String, String> queryLemmasMap,
-                                                       Map<String, String> textLemmasMap) {
+    private Map<String, Set<String>> getEqualsWordsMap(Map<String, String> queryLemmasMap, Map<String, String> textLemmasMap) {
         Map<String, Set<String>> equalsWordsMap = new HashMap<>();
         queryLemmasMap.forEach((queryNormalWord, queryWord) -> {
             equalsWordsMap.put(queryWord, new HashSet<>());
@@ -266,10 +265,8 @@ public class SearchingService implements searchengine.services.SearchingService 
                 }
             });
         });
-
         return equalsWordsMap;
     }
-
     private Map<Page, Float> getRelevance(List<Page> pagesFinalList, Map<Lemma, Integer> sortedLemmasMap) {
         Map<Page, Float> absRelevanceMap = new HashMap<>();
         Map<Page, Float> relevanceMap = new HashMap<>();
@@ -310,7 +307,6 @@ public class SearchingService implements searchengine.services.SearchingService 
             return null;
         }
     }
-
     private List<Page> getPagesList(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         Lemma firstLemma = sortedLemmasMap.entrySet().iterator().next().getKey();
         List<IndexModel> indexes;
@@ -335,7 +331,6 @@ public class SearchingService implements searchengine.services.SearchingService 
         });
         return pagesFinalList;
     }
-
     private Map<Lemma, Integer> getSortedLemmasMap(Map<Lemma, Integer> unsortedMap){
         return unsortedMap.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
@@ -344,12 +339,12 @@ public class SearchingService implements searchengine.services.SearchingService 
                         Map.Entry::getValue,
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
-
     @SneakyThrows
     private Map<String, String> lemmasParser(String query) {
+        LemmasParcer parcer = new LemmasParcer();
         LuceneMorphology morphology = new RussianLuceneMorphology();
         Map<String, String> lemmasMap = new HashMap<>();
-        String[] words = arrayContainsRussianWords(query);
+        String[] words = parcer.arrayContainsRussianWords(query);
 
         for(String word : words) {
             if (word.isBlank()) {
@@ -357,7 +352,7 @@ public class SearchingService implements searchengine.services.SearchingService 
             }
 
             List<String> wordBaseForms = morphology.getMorphInfo(word);
-            if (anyWordBaseBelongToParticle(wordBaseForms)) {
+            if (parcer.anyWordBaseBelongToParticle(wordBaseForms)) {
                 continue;
             }
 
@@ -373,25 +368,5 @@ public class SearchingService implements searchengine.services.SearchingService 
             lemmasMap.put(normalWord, word);
         }
         return lemmasMap;
-    }
-
-    private String[] arrayContainsRussianWords(String text) {
-        return text.toLowerCase(Locale.ROOT)
-                .replaceAll("[^А-яёЁ\\s]+", "")
-                .trim()
-                .split("\\s");
-    }
-
-    private boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
-        return wordBaseForms.stream().anyMatch(this::hasParticleProperty);
-    }
-
-    private boolean hasParticleProperty(String wordBase) {
-        for(String property : particlesNames) {
-            if(wordBase.toUpperCase().contains(property)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

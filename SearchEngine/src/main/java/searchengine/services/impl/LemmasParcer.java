@@ -1,4 +1,4 @@
-package searchengine.services;
+package searchengine.services.impl;
 
 import lombok.AllArgsConstructor;
 import org.apache.lucene.morphology.LuceneMorphology;
@@ -49,14 +49,14 @@ public class LemmasParcer {
         return lemmas;
     }
 
-    private String[] arrayContainsRussianWords(String text) {
+    protected String[] arrayContainsRussianWords(String text) {
         return text.toLowerCase(Locale.ROOT)
                 .replaceAll("[^А-яёЁ\\s]+", "")
                 .trim()
                 .split("\\s");
     }
 
-    private boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
+    protected boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
         return wordBaseForms.stream().anyMatch(this::hasParticleProperty);
     }
 

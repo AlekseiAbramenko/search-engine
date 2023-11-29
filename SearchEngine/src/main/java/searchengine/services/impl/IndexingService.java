@@ -6,7 +6,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.services.LemmasParcer;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.model.*;
@@ -14,7 +13,6 @@ import searchengine.repository.IndexRepository;
 import searchengine.repository.LemmaRepository;
 import searchengine.repository.PageRepository;
 import searchengine.repository.SiteRepository;
-import searchengine.services.SiteParcer;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

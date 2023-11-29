@@ -9,11 +9,6 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }
-//todo: подсвечивать жирным слова в заголовке
-
-//todo: использовать stringBuilder для сниппета
-
-//todo: уменьшить размер метода getSnippet
 
 //todo: класс с репозиториями или класс с параметрами для парсера
 
