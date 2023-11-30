@@ -9,7 +9,3 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }
-
-//todo: выложить прогу и базу в сеть, сделать доступ по ссылке
-
-//todo: написать файл readme и отправить на проверку куратору

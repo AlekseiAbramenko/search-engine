@@ -29,7 +29,7 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity startIndexing() {
-        if(indexingService.getService() == null || indexingService.getService().isTerminated()){
+        if (indexingService.getService() == null || indexingService.getService().isTerminated()) {
             indexingService.getIndexing();
             return ResponseEntity.ok(new IndexingResponseTrue());
         } else {
@@ -39,7 +39,7 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity stopIndexing() {
-        if(indexingService.getService() == null || indexingService.getService().isTerminated()) {
+        if (indexingService.getService() == null || indexingService.getService().isTerminated()) {
             return ResponseEntity.ok(new IndexingResponseFalse("Индексация не запущена"));
         } else {
             indexingService.stopIndexing();
@@ -52,7 +52,7 @@ public class ApiController {
         String decodeLink = java.net.URLDecoder.decode(link, StandardCharsets.UTF_8);
         String url = "url=";
         String result = decodeLink.substring(url.length());
-        if(indexingService.checkLink(result)) {
+        if (indexingService.checkLink(result)) {
             indexingService.indexingPage(result);
             return ResponseEntity.ok(new IndexingResponseTrue());
         } else {
@@ -63,21 +63,22 @@ public class ApiController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity search(@RequestParam ("query") String query,
-                                 @RequestParam ("offset") int offset,
-                                 @RequestParam ("limit") int limit,
-                                 @RequestParam (value = "site", required = false) String site) {
+    public ResponseEntity search(@RequestParam("query") String query,
+                                 @RequestParam("offset") int offset,
+                                 @RequestParam("limit") int limit,
+                                 @RequestParam(value = "site", required = false) String site) {
         RequestParameters requestParam = new RequestParameters(query, site, offset, limit);
-        if(query.length() == 0) {
+        if (query.length() == 0) {
             return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос."));
         }
-        if(indexingService.getService() != null) {
-            return ResponseEntity.ok(new SearchResponseFalse("Индексация ещё идёт. " +
-                    "Дождитесь её завершения."));
-        } if(searchingService.getSearching(requestParam).getCount() == 0) {
-            return ResponseEntity.ok(new SearchResponseFalse("Поиск не дал результатов."));
-        }
-        else {
+        if (indexingService.getService() != null) {
+            if (indexingService.getService().isTerminated()) {
+                return ResponseEntity.ok(searchingService.getSearching(requestParam));
+            } else {
+                return ResponseEntity.ok(new SearchResponseFalse("Индексация ещё идёт. " +
+                        "Дождитесь её завершения."));
+            }
+        } else {
             return ResponseEntity.ok(searchingService.getSearching(requestParam));
         }
     }
