@@ -35,7 +35,7 @@ public class LemmasParcer {
                 continue;
             }
 
-            String normalWord = normalForms.get(0);
+            String normalWord = normalForms.getFirst();
             if(normalWord.length() < 2) {
                 continue;
             }

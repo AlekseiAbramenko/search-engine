@@ -68,7 +68,7 @@ public class ApiController {
                                  @RequestParam("limit") int limit,
                                  @RequestParam(value = "site", required = false) String site) {
         RequestParameters requestParam = new RequestParameters(query, site, offset, limit);
-        if (query.length() == 0) {
+        if (query.isEmpty()) {
             return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос."));
         }
         if (indexingService.getService() != null) {

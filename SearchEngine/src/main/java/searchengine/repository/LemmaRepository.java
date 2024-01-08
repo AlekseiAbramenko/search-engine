@@ -20,8 +20,10 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     void deleteLemmasBySite(SiteModel site);
     @Transactional
     @Modifying
-    @Query("update Lemma l set l.frequency = ?1 where l.lemma = ?2")
-    void updateLemmasFrequency(int frequency, String lemma);
+    @Query("update Lemma l set l.frequency = ?1 where l.lemma = ?2 and l.site = ?3")
+    void updateLemmasFrequency(int frequency, String lemma, SiteModel site);
     @Query("select l from Lemma l where l.lemma = ?1")
     Optional<Lemma> findLemmaByName(String lemma);
+    @Query("select l from Lemma l where l.lemma = ?1 and l.site = ?2")
+    Optional<Lemma> findLemma(String lemma, SiteModel site);
 }

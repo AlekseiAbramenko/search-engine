@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
@@ -38,6 +39,8 @@ public class SiteParcer extends RecursiveAction {
     @Override
     public void compute() {
         if(getPool().isShutdown()) {
+            System.out.println(siteModel.getName());
+            System.out.println("ЧТО-ТО ПОШЛО НЕ ТАК!!!");
             taskList.clear();
         } else {
             try {
@@ -104,15 +107,16 @@ public class SiteParcer extends RecursiveAction {
         try {
             HashMap<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
-                if(lemmaRepository.findLemmaByName(key).isPresent()) {
-                    increaseLemmasFrequency(key);
+                Optional<Lemma> optionalLemma = lemmaRepository.findLemma(key, siteModel);
+                if(optionalLemma.isPresent()) {
+                    increaseLemmasFrequency(optionalLemma.get());
                 } else {
                     postLemma(key, siteModel);
                 }
-                if(pageRepository.findPage(path).isPresent()
-                        && lemmaRepository.findLemmaByName(key).isPresent()) {
-                    Page page = pageRepository.findPage(path).get();
-                    Lemma lemma = lemmaRepository.findLemmaByName(key).get();
+                Optional<Page> optionalPage = pageRepository.findPage(path);
+                if(optionalPage.isPresent() && optionalLemma.isPresent()) {
+                    Page page = optionalPage.get();
+                    Lemma lemma = optionalLemma.get();
                     if (indexRepository.existsIndex(page, lemma)) {
                         indexRepository.updateIndex(value, page, lemma);
                     } else {
@@ -144,10 +148,11 @@ public class SiteParcer extends RecursiveAction {
     }
 
     @Transactional
-    private void increaseLemmasFrequency(String name) {
-        Lemma lemma = lemmaRepository.findLemmaByName(name).get();
+    private void increaseLemmasFrequency(Lemma lemma) {
+        String name = lemma.getLemma();
+        SiteModel siteModel = lemma.getSite();
         int newFrequency = lemma.getFrequency() + 1;
-        lemmaRepository.updateLemmasFrequency(newFrequency, lemma.getLemma());
+        lemmaRepository.updateLemmasFrequency(newFrequency, name, siteModel);
     }
 
     public Document getConnection(String link) {

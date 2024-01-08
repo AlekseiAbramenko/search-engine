@@ -1,6 +1,7 @@
 package searchengine.services.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,6 +32,7 @@ public class IndexingService implements searchengine.services.IndexingService {
     @Autowired
     private IndexRepository indexRepository;
     private final SitesList sites;
+    @Getter
     private ExecutorService service;
     private final List<ForkJoinPool> poolsList = new ArrayList<>();
 
@@ -97,7 +99,8 @@ public class IndexingService implements searchengine.services.IndexingService {
         }
 
         if(pageRepository.findPage(path).isPresent()) {
-            removePageInformation(path);
+            Page page = pageRepository.findPage(path).get();
+            removePageInformation(page);
         }
 
         if (siteRepository.findSiteByUrl(siteUrl).isEmpty()) {
@@ -111,16 +114,16 @@ public class IndexingService implements searchengine.services.IndexingService {
         }
     }
 
-    private void removePageInformation(String path) {
-        Page page = pageRepository.findPage(path).get();
+    private void removePageInformation(Page page) {
         List<IndexModel> indexList = indexRepository.findLemmasByPage(page);
         indexRepository.deleteIndexByPage(page);
         indexList.forEach(index -> {
             Lemma lemma = index.getLemma();
             if (lemma.getFrequency() > 1) {
                 String name = lemma.getLemma();
+                SiteModel siteModel = lemma.getSite();
                 int newFrequency = lemma.getFrequency() - 1;
-                lemmaRepository.updateLemmasFrequency(newFrequency, name);
+                lemmaRepository.updateLemmasFrequency(newFrequency, name, siteModel);
             } else {
                 lemmaRepository.delete(lemma);
             }
@@ -140,19 +143,21 @@ public class IndexingService implements searchengine.services.IndexingService {
     }
 
     private void addLemmasToDB(String content, SiteModel siteModel, String path) {
+        //todo: этот метод дублируется, от него нужно избавиться! Сделать из него класс, добавить туда сопутствующие методы, которые также дублируются!
         LemmasParcer lemmasParcer = new LemmasParcer();
         try {
             Map<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
-                if(lemmaRepository.findLemmaByName(key).isPresent()) {
-                    increaseLemmasFrequency(key);
+                Optional<Lemma> optionalLemma = lemmaRepository.findLemma(key, siteModel);
+                if(optionalLemma.isPresent()) {
+                    increaseLemmasFrequency(optionalLemma.get());
                 } else {
                     postLemma(key, siteModel);
                 }
                 if(pageRepository.findPage(path).isPresent()
-                        && lemmaRepository.findLemmaByName(key).isPresent()) {
+                        && optionalLemma.isPresent()) {
                     Page page = pageRepository.findPage(path).get();
-                    Lemma lemma = lemmaRepository.findLemmaByName(key).get();
+                    Lemma lemma = optionalLemma.get();
                     if (indexRepository.existsIndex(page, lemma)) {
                         indexRepository.updateIndex(value, page, lemma);
                     } else {
@@ -185,10 +190,11 @@ public class IndexingService implements searchengine.services.IndexingService {
     }
 
     @Transactional
-    private void increaseLemmasFrequency(String name) {
-        Lemma lemma = lemmaRepository.findLemmaByName(name).get();
+    private void increaseLemmasFrequency(Lemma lemma) {
+        String name = lemma.getLemma();
+        SiteModel siteModel = lemma.getSite();
         int newFrequency = lemma.getFrequency() + 1;
-        lemmaRepository.updateLemmasFrequency(newFrequency, lemma.getLemma());
+        lemmaRepository.updateLemmasFrequency(newFrequency, name, siteModel);
     }
 
     @Transactional
@@ -230,10 +236,6 @@ public class IndexingService implements searchengine.services.IndexingService {
         siteModel.setLastError("Индексация прервана пользователем");
         siteModel.setStatusTime(LocalDateTime.now());
         siteRepository.save(siteModel);
-    }
-
-    public ExecutorService getService() {
-        return service;
     }
 
     @Override

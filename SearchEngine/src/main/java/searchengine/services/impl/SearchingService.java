@@ -15,8 +15,10 @@ import searchengine.dto.search.SearchResponse;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
+import searchengine.model.SiteModel;
 import searchengine.repository.IndexRepository;
 import searchengine.repository.LemmaRepository;
+import searchengine.repository.SiteRepository;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +32,8 @@ public class SearchingService implements searchengine.services.SearchingService 
     private LemmaRepository lemmaRepository;
     @Autowired
     private IndexRepository indexRepository;
+    @Autowired
+    private SiteRepository siteRepository;
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
 
     public SearchResponse getSearching(RequestParameters requestParam) {
@@ -38,13 +42,14 @@ public class SearchingService implements searchengine.services.SearchingService 
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
 
         queryLemmasMap.forEach((normalWord, word) -> {
-            if(lemmaRepository.findLemmaByName(normalWord).isPresent()) {
-                Lemma lemma = lemmaRepository.findLemmaByName(normalWord).get();
+            Optional<Lemma> optionalLemma = lemmaRepository.findLemmaByName(normalWord);
+            if(optionalLemma.isPresent()) {
+                Lemma lemma = optionalLemma.get();
                 lemmasFrequency.put(lemma, lemma.getFrequency());
             }
         });
 
-        if (lemmasFrequency.size() == 0) {
+        if (lemmasFrequency.isEmpty()) {
             response.setData(null);
             response.setCount(0);
         } else {
