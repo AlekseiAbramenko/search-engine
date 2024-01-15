@@ -37,11 +37,14 @@ public class SearchingService implements searchengine.services.SearchingService 
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
 
     public SearchResponse getSearching(RequestParameters requestParam) {
-        SearchResponse response = new SearchResponse();
+           SearchResponse response = new SearchResponse();
         Map<String, String> queryLemmasMap = lemmasParser(requestParam.getQuery());
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
 
         queryLemmasMap.forEach((normalWord, word) -> {
+            //todo: вот этот метод косячный, похоже, из-за него ошибки!
+            // а если не из-за него, то они будут! либо использовать лист,
+            // либо искать и по сайту, иначе ексепшн
             Optional<Lemma> optionalLemma = lemmaRepository.findLemmaByName(normalWord);
             if(optionalLemma.isPresent()) {
                 Lemma lemma = optionalLemma.get();
