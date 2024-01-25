@@ -4,12 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.Connection;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
-import searchengine.dto.indexing.ParsingParameters;
+import searchengine.dto.indexing.PageParameters;
 import searchengine.model.*;
 import searchengine.repository.*;
 
@@ -27,9 +29,9 @@ public class IndexingService implements searchengine.services.IndexingService {
     @Getter
     private ExecutorService service;
     private ForkJoinPool pool;
+    private final Logger logger = LoggerFactory.getLogger(IndexingService.class);
 
     @Override
-    @Transactional
     public void getIndexing() {
         service = Executors.newSingleThreadExecutor();
         for (Site site : sites.getSites()) {
@@ -42,9 +44,9 @@ public class IndexingService implements searchengine.services.IndexingService {
                 postSite(name, url);
                 SiteModel siteModel = getSiteModelFromDB(url);
                 CopyOnWriteArraySet<String> linksList = new CopyOnWriteArraySet<>();
-                ParsingParameters parsingParameters = new ParsingParameters(siteModel, url);
+                PageParameters pageParameters = new PageParameters(siteModel, url);
                 pool = new ForkJoinPool();
-                pool.invoke(new SiteParcer(parsingParameters, linksList, repositories));
+                pool.invoke(new SiteParser(pageParameters, linksList, repositories));
                 if (pool.isShutdown() && siteModel.getStatus().equals(SiteStatus.INDEXING)) {
                     setFailedStatus(siteModel);
                 } else {
@@ -54,17 +56,13 @@ public class IndexingService implements searchengine.services.IndexingService {
         }
         service.shutdown();
     }
-
-    @Transactional
     @Override
     public void stopIndexing() {
         pool.shutdownNow();
         service.shutdownNow();
     }
-
-    @Transactional
     @Override
-    public void indexingPage(String link) {//todo: сократить метод
+    public void indexingPage(String link) {
         String siteUrl = "";
         String siteName = "";
         for (Site site : sites.getSites()) {
@@ -75,43 +73,35 @@ public class IndexingService implements searchengine.services.IndexingService {
                 break;
             }
         }
-
         try {
             Document doc = Connection.getConnection(link);
+            SiteParser siteParser = new SiteParser(repositories);
             int cod = doc.connection().response().statusCode();
             String content = doc.html();
-            String path;
-
-            if (link.equals(siteUrl)) {
-                path = "/";
-            } else {
-                path = link.replace(siteUrl, "");
-            }
-
-            Optional<Page> optionalPage = repositories.getPageRepository().findPage(path);
-            if (optionalPage.isPresent()) {
-                Page page = optionalPage.get();
-                removePageInformation(page);
-            }
-
-            Optional<SiteModel> optionalSiteModel = repositories.getSiteRepository().findSiteByUrl(siteUrl);
-            if (optionalSiteModel.isEmpty()) {
-                postSite(siteName, siteUrl);
-            }
-
-            SiteModel siteModel = optionalSiteModel.get();
-            SiteParcer siteParcer = new SiteParcer(repositories);
-            siteParcer.postPage(cod, content, path, siteModel);
-            if (cod < 399) {
-                siteParcer.addLemmasToDB(content, siteModel, path);
-            }
+            String path = siteParser.getPath(link, siteUrl);
+            checkPageAndRemove(path);
+            SiteModel siteModel = checkSite(siteName, siteUrl);
+            PageParameters pageParam = new PageParameters(siteModel, path, content, cod);
+            siteParser.postPageAndLemmas(pageParam);
             setIndexedStatus(siteModel);
         } catch (IOException exception) {
-            System.out.println("Время соединения истекло");
-//            logger.error("Время соединения истекло");
+            logger.error("Время соединения истекло");
         }
     }
-
+    private SiteModel checkSite(String siteName, String siteUrl) {
+       SiteModel siteModel = getSiteModelFromDB(siteUrl);
+        if (siteModel == null) {
+            postSite(siteName, siteUrl);
+        }
+        return siteModel;
+    }
+    private void checkPageAndRemove(String path) {
+        Optional<Page> optionalPage = repositories.getPageRepository().findPage(path);
+        if (optionalPage.isPresent()) {
+            Page page = optionalPage.get();
+            removePageInformation(page);
+        }
+    }
     private void removePageInformation(Page page) {
         List<IndexModel> indexList = repositories.getIndexRepository().findLemmasByPage(page);
         repositories.getIndexRepository().deleteIndexByPage(page);
@@ -128,18 +118,16 @@ public class IndexingService implements searchengine.services.IndexingService {
         });
         repositories.getPageRepository().delete(page);
     }
-
     private void cleanDB(String url) {
         SiteModel siteModel = getSiteModelFromDB(url);
-        List<Page> pageList = repositories.getPageRepository().findPagesBySite(siteModel);
-        pageList.forEach(page -> {
+        List<Page> pagesList = repositories.getPageRepository().findPagesBySite(siteModel);
+        pagesList.forEach(page -> {
             repositories.getIndexRepository().deleteIndexByPage(page);
-            repositories.getPageRepository().delete(page);
         });
+        repositories.getPageRepository().deletePagesBySite(siteModel);;
         repositories.getLemmaRepository().deleteLemmasBySite(siteModel);
-        repositories.getSiteRepository().deleteSiteByUrl(url);
+        repositories.getSiteRepository().delete(siteModel);
     }
-
     @Transactional
     private void postSite(String name, String url) {
         SiteModel siteModel = new SiteModel();
@@ -150,19 +138,16 @@ public class IndexingService implements searchengine.services.IndexingService {
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
-
     private SiteModel getSiteModelFromDB(String url) {
         Optional<SiteModel> siteModel = repositories.getSiteRepository().findSiteByUrl(url);
         return siteModel.orElse(null);
     }
-
     @Transactional
     private void setIndexedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.INDEXED);
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
-
     @Transactional
     private void setFailedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.FAILED);
@@ -170,7 +155,6 @@ public class IndexingService implements searchengine.services.IndexingService {
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
-
     @Override
     public boolean checkLink(String link) {
         boolean pageIsOk = false;

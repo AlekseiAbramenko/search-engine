@@ -8,10 +8,7 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteModel;
-import searchengine.repository.IndexRepository;
-import searchengine.repository.LemmaRepository;
-import searchengine.repository.PageRepository;
-import searchengine.repository.SiteRepository;
+import searchengine.repository.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -23,36 +20,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatisticsService implements searchengine.services.StatisticsService {
     @Autowired
-    private PageRepository pageRepository;
-    @Autowired
-    private SiteRepository siteRepository;
-    @Autowired
-    private LemmaRepository lemmaRepository;
+    private Repositories repositories;
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics total = new TotalStatistics();
-        total.setSites(siteRepository.sitesCount());
+        total.setSites(repositories.getSiteRepository().sitesCount());
         total.setIndexing(true);
-
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
-        List<SiteModel> sitesList = siteRepository.gelAllSites();
+        List<SiteModel> sitesList = repositories.getSiteRepository().gelAllSites();
         for (SiteModel site : sitesList) {
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(site.getName());
             item.setUrl(site.getUrl());
-            int pages = pageRepository.pagesCountBySite(site);
-            int lemmas = lemmaRepository.lemmasCountBySite(site);
+            int pages = repositories.getPageRepository().pagesCountBySite(site);
+            int lemmas = repositories.getLemmaRepository().lemmasCountBySite(site);
             item.setPages(pages);
             item.setLemmas(lemmas);
             item.setStatus(String.valueOf(site.getStatus()));
             item.setError(site.getLastError());
             item.setStatusTime(getMillisecondsFromLocalDateTime(site.getStatusTime()));
-            total.setPages(total.getPages() + pageRepository.pagesCountBySite(site));
-            total.setLemmas(total.getLemmas() + lemmaRepository.lemmasCountBySite(site));
+            total.setPages(total.getPages() + repositories.getPageRepository().pagesCountBySite(site));
+            total.setLemmas(total.getLemmas() + repositories.getLemmaRepository().lemmasCountBySite(site));
             detailed.add(item);
         }
-
         StatisticsResponse response = new StatisticsResponse();
         StatisticsData data = new StatisticsData();
         data.setTotal(total);

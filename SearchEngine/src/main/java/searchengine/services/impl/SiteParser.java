@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import searchengine.config.Connection;
-import searchengine.dto.indexing.ParsingParameters;
+import searchengine.dto.indexing.PageParameters;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
@@ -26,56 +26,49 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 
-public class SiteParcer extends RecursiveAction {
-    private List<SiteParcer> taskList;
-    private ParsingParameters parsingParameters;
+public class SiteParser extends RecursiveAction {
+    private List<SiteParser> taskList;
+    private PageParameters pageParameters;
     private CopyOnWriteArraySet<String> linksList;
     private final Repositories repositories;
-    private final Logger logger = LoggerFactory.getLogger(SiteParcer.class);
+    private final Logger logger = LoggerFactory.getLogger(SiteParser.class);
 
-    public SiteParcer(ParsingParameters parsingParameters,
-                      CopyOnWriteArraySet<String> linksList,  Repositories repositories) {
-        this.parsingParameters = parsingParameters;
+    public SiteParser(PageParameters pageParameters,
+                      CopyOnWriteArraySet<String> linksList, Repositories repositories) {
+        this.pageParameters = pageParameters;
         this.linksList = linksList;
         this.repositories = repositories;
     }
 
-    public SiteParcer(Repositories repositories) {
+    public SiteParser(Repositories repositories) {
         this.repositories = repositories;
     }
 
     @Override
-    public void compute() { //todo: сократить метод!
-        if(getPool().isShutdown() && taskList != null) {
+    public void compute() {
+        if (getPool().isShutdown() && taskList != null) {
             taskList.clear();
         } else {
             try {
-                String url = parsingParameters.getUrl();
-                SiteModel siteModel = parsingParameters.getSiteModel();
+                String url = pageParameters.getUrl();
+                SiteModel siteModel = pageParameters.getSiteModel();
                 taskList = new ArrayList<>();
                 Document doc = Connection.getConnection(url);
                 Thread.sleep(500);
-                String path;
-                if(url.equals(siteModel.getUrl())) {
-                    path = "/";
-                } else {
-                    path = url.replace(siteModel.getUrl(), "");
-                }
                 int cod = doc.connection().response().statusCode();
                 String content = doc.html();
-                if(repositories.getPageRepository().findPage(path).isEmpty()) {
-                    postPage(cod, content, path, siteModel);
-                    if(cod<399) {
-                        addLemmasToDB(content, siteModel, path);
-                    }
+                String path = getPath(url, siteModel.getUrl());
+                PageParameters pageParam = new PageParameters(siteModel, path, content, cod);
+                if (repositories.getPageRepository().findPage(path).isEmpty()) {
+                    postPageAndLemmas(pageParam);
                 }
                 Elements elements = doc.select("a[abs:href^=" + url + "]");
                 elements.forEach(element -> {
                     String link = element.absUrl("href");
                     if (checkLink(link)) {
                         linksList.add(link);
-                        ParsingParameters newParsingParameters = new ParsingParameters(siteModel, link);
-                        SiteParcer task = new SiteParcer(newParsingParameters, linksList, repositories);
+                        PageParameters newPageParam = new PageParameters(siteModel, link);
+                        SiteParser task = new SiteParser(newPageParam, linksList, repositories);
                         task.fork();
                         taskList.add(task);
                     }
@@ -87,12 +80,28 @@ public class SiteParcer extends RecursiveAction {
                 logger.error("Время соединения истекло!");
             } catch (InterruptedException exception) {
                 logger.error("Операция прервана!");
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
     }
-
+    synchronized void postPageAndLemmas(PageParameters pageParam) {
+        int cod = pageParam.getCod();
+        SiteModel siteModel = pageParam.getSiteModel();
+        String content = pageParam.getContent();
+        String path = pageParam.getUrl();
+        postPage(pageParam);
+        if (cod < 399) {
+            addLemmasToDB(content, siteModel, path);
+        }
+    }
+    String getPath(String url, String siteUrl) {
+        String path;
+        if (url.equals(siteUrl)) {
+            path = "/";
+        } else {
+            path = url.replace(siteUrl, "");
+        }
+        return path;
+    }
     private boolean checkLink(String url) {
         return !linksList.contains(url)
                 && !url.contains("#")
@@ -101,9 +110,12 @@ public class SiteParcer extends RecursiveAction {
                 && !url.contains(".jpg")
                 && !url.contains(".php");
     }
-
     @Transactional
-    void postPage(Integer cod, String content, String path, SiteModel siteModel) {
+    void postPage(PageParameters pageParam) {
+        SiteModel siteModel = pageParam.getSiteModel();
+        String path = pageParam.getUrl();
+        String content = pageParam.getContent();
+        int cod = pageParam.getCod();
         Page page = new Page();
         page.setSite(siteModel);
         page.setPath(path);
@@ -113,11 +125,11 @@ public class SiteParcer extends RecursiveAction {
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
-
+    @Transactional
     synchronized void addLemmasToDB(String content, SiteModel siteModel, String path) {
-        LemmasParcer lemmasParcer = new LemmasParcer();
+        LemmasParser lemmasParser = new LemmasParser();
         try {
-            HashMap<String, Integer> lemmas = lemmasParcer.countLemmasFromText(content);
+            HashMap<String, Integer> lemmas = lemmasParser.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
                 try {
                     Optional<Lemma> optionalLemma =
@@ -138,7 +150,7 @@ public class SiteParcer extends RecursiveAction {
                         }
                     }
                 } catch (IncorrectResultSizeDataAccessException ex) {
-                    logger.error("lemma: " + key + "; site: " + siteModel.getId());
+                    logger.error("дублирование: " + "lemma: " + key + "; site: " + siteModel.getId());
                 }
             });
         } catch (IOException e) {
@@ -154,16 +166,18 @@ public class SiteParcer extends RecursiveAction {
         index.setRank(rank);
         repositories.getIndexRepository().save(index);
     }
-
     @Transactional
     synchronized void postLemma(String name, SiteModel siteModel) {
-        Lemma lemma = new Lemma();
-        lemma.setLemma(name);
-        lemma.setFrequency(1);
-        lemma.setSite(siteModel);
-        repositories.getLemmaRepository().save(lemma);
+        if (repositories.getLemmaRepository().findLemma(name, siteModel).isPresent()) {
+            logger.error("Попытка повторно добавить лемму " + name + " " + siteModel.getId());
+        } else {
+            Lemma lemma = new Lemma();
+            lemma.setLemma(name);
+            lemma.setFrequency(1);
+            lemma.setSite(siteModel);
+            repositories.getLemmaRepository().save(lemma);
+        }
     }
-
     @Transactional
     private void increaseLemmasFrequency(Lemma lemma) {
         String name = lemma.getLemma();

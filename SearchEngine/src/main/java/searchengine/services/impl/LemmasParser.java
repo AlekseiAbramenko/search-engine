@@ -11,35 +11,29 @@ import java.util.List;
 import java.util.Locale;
 
 @AllArgsConstructor
-public class LemmasParcer {
+public class LemmasParser {
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
     public HashMap<String, Integer> countLemmasFromText(String html) throws IOException {
         LuceneMorphology morphology = new RussianLuceneMorphology();
         HashMap<String, Integer> lemmas = new HashMap<>();
-
         String text = Jsoup.parse(html).text();
         String[] words = arrayContainsRussianWords(text);
-
         for(String word : words) {
             if(word.isBlank()) {
                 continue;
             }
-
             List<String> wordBaseForms = morphology.getMorphInfo(word);
             if(anyWordBaseBelongToParticle(wordBaseForms)) {
                 continue;
             }
-
             List<String> normalForms = morphology.getNormalForms(word);
             if(normalForms.isEmpty()) {
                 continue;
             }
-
             String normalWord = normalForms.getFirst();
             if(normalWord.length() < 2) {
                 continue;
             }
-
             if(lemmas.containsKey(normalWord)) {
                 lemmas.put(normalWord, lemmas.get(normalWord) +1);
             } else {

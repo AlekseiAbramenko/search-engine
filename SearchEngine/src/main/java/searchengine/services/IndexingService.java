@@ -8,5 +8,4 @@ public interface IndexingService {
     void indexingPage(String link);
     ExecutorService getService();
     boolean checkLink(String path);
-
 }

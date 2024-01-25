@@ -2,7 +2,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
-    <property name="LOG_FILE" value="log/error.log"/>
+    <property name="LOG_FILE" value="log/log.log"/>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>%d{HH:mm:ss:SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
@@ -21,5 +21,7 @@
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE" level="ERROR"/>
     </root>
-    <logger name="searchengine.services.impl.SiteParcer" level="ERROR"/>
+    <logger name="searchengine.services.impl.SiteParser" ref="FILE" level="ERROR"/>
+    <logger name="searchengine.services.impl.SearchingService" ref="FILE" level="ERROR"/>
+    <logger name="searchengine.services.impl.IndexingService" ref="FILE" level="ERROR"/>
 </configuration>
