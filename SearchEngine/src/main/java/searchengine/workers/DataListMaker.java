@@ -1,10 +1,8 @@
-package searchengine.services.impl;
+package searchengine.workers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import searchengine.dto.search.SearchData;
@@ -36,15 +34,14 @@ public class DataListMaker implements Callable<SearchData> {
     private String getTitle(String content, Map<String, String> queryLemmasMap) {
         Document doc = Jsoup.parse(content);
         String text = doc.title();
-        Map<String, String> titleLemmasMap = lemmasParser(text);
+        Map<String, String> titleLemmasMap = getLemmasMap(text);
         Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, titleLemmasMap);
-
         return getFatWordsText(text, equalsWordsMap);
     }
     @SneakyThrows
     private String getSnippet(String content, Map<String, String> queryLemmasMap) {
         String text = Jsoup.parse(content).text();
-        Map<String, String> textLemmasMap = lemmasParser(text);
+        Map<String, String> textLemmasMap = getLemmasMap(text);
         Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, textLemmasMap);
         Map<String, Set<String>> fatEqualsWordsMap = getFatEqualsWordsMap(equalsWordsMap);
         String fatWordsText = getFatWordsText(text, equalsWordsMap);
@@ -67,30 +64,9 @@ public class DataListMaker implements Callable<SearchData> {
         return String.valueOf(snippet);
     }
     @SneakyThrows
-    private Map<String, String> lemmasParser(String query) {
+    private Map<String, String> getLemmasMap(String query) {
         LemmasParser parser = new LemmasParser();
-        LuceneMorphology morphology = new RussianLuceneMorphology();
-        Map<String, String> lemmasMap = new HashMap<>();
-        String[] words = parser.arrayContainsRussianWords(query);
-        for(String word : words) {
-            if (word.isBlank()) {
-                continue;
-            }
-            List<String> wordBaseForms = morphology.getMorphInfo(word);
-            if (parser.anyWordBaseBelongToParticle(wordBaseForms)) {
-                continue;
-            }
-            List<String> normalForms = morphology.getNormalForms(word);
-            if (normalForms.isEmpty()) {
-                continue;
-            }
-            String normalWord = normalForms.getFirst();
-            if (normalWord.length() < 2) {
-                continue;
-            }
-            lemmasMap.put(normalWord, word);
-        }
-        return lemmasMap;
+        return parser.getLemmasMapLemmaVsQueryWord(query);
     }
     private Map<String, Set<String>> getEqualsWordsMap(Map<String, String> queryLemmasMap,
                                                        Map<String, String> textLemmasMap) {
@@ -125,10 +101,8 @@ public class DataListMaker implements Callable<SearchData> {
         equalsWordsMap.forEach((word, wordsList) -> {
             equalsWordsList.addAll(wordsList);
         });
-
         String[] replacementList = new String[equalsWordsList.size()];
         String[] searchList = new String[equalsWordsList.size()];
-
         for(int i=0; i<equalsWordsList.size(); i++) {
             String word = equalsWordsList.get(i);
             searchList[i] = word;
@@ -146,12 +120,10 @@ public class DataListMaker implements Callable<SearchData> {
             });
             fatEqualsWordsMap.put(word, newSet);
         });
-
         return fatEqualsWordsMap;
     }
     private List<String> getShortSentencesList(String[] sentences) {
         List<String> shortSentences = new ArrayList<>();
-
         for (String sentence : sentences) {
             if(sentence.length() > 150) {
                 List<String> sentList = getShortSentences(sentence);
@@ -165,13 +137,11 @@ public class DataListMaker implements Callable<SearchData> {
     private List<String> getShortSentences(String sentence) {
         String[] arrWords = sentence.split(" ");
         List<String> shortSentences = new ArrayList<>();
-
         StringBuilder stringBuilder = new StringBuilder();
         int count = 0;
         int index = 0;
         int length = arrWords.length;
         int maxLength = 150;
-
         while (index != length) {
             if(count + arrWords[index].length() <= maxLength) {
                 count += arrWords[index].length() + 1;
@@ -192,7 +162,7 @@ public class DataListMaker implements Callable<SearchData> {
                                                  Map<String, Set<String>> fatEqualsWordsMap) {
         Map<String, Integer> sentencesMap = new HashMap<>();
         sentencesList.forEach(sentence -> {
-            AtomicInteger j = new AtomicInteger();//счетчик найденных слов в предложении
+            AtomicInteger j = new AtomicInteger();
             fatEqualsWordsMap.forEach((word, wordsList) -> {
                 for (String w : wordsList) {
                     if (sentence.contains(w)) {
@@ -201,16 +171,15 @@ public class DataListMaker implements Callable<SearchData> {
                     }
                 }
             });
-            sentencesMap.put(sentence, j.intValue());//предложение - количество совпадений
+            sentencesMap.put(sentence, j.intValue());
         });
         return sentencesMap;
     }
     private Map<String, Set<String>> getLastWordsMap(Map<String, Set<String>> fatEqualsWordsMap,
                                                      String maxWordsSentence) {
-        Map<String, Set<String>> lastWordsMap = new HashMap<>();//слова, которые нужно найти и склеить
+        Map<String, Set<String>> lastWordsMap = new HashMap<>();
         fatEqualsWordsMap.forEach((queryWord, wordsSet) -> {
             AtomicInteger count = new AtomicInteger();
-//            System.out.println("начальное значение count: " + count);//проверка
             wordsSet.forEach(word -> {
                 if (maxWordsSentence.contains(word)) {
                     count.addAndGet(1);

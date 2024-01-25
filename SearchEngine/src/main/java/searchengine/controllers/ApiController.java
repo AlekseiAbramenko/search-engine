@@ -8,9 +8,9 @@ import searchengine.dto.indexing.IndexingResponseTrue;
 import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchResponseFalse;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.services.impl.IndexingService;
-import searchengine.services.impl.StatisticsService;
-import searchengine.services.impl.SearchingService;
+import searchengine.services.impl.IndexingServiceImpl;
+import searchengine.services.impl.StatisticsServiceImpl;
+import searchengine.services.impl.SearchingServiceImpl;
 
 import java.nio.charset.StandardCharsets;
 
@@ -18,9 +18,9 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class ApiController {
-    private final StatisticsService statisticsService;
-    private final IndexingService indexingService;
-    private final SearchingService searchingService;
+    private final StatisticsServiceImpl statisticsService;
+    private final IndexingServiceImpl indexingService;
+    private final SearchingServiceImpl searchingService;
 
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics() {

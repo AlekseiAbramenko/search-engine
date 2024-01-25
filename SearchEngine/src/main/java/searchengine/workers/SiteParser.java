@@ -1,4 +1,4 @@
-package searchengine.services.impl;
+package searchengine.workers;
 
 import jakarta.transaction.Transactional;
 import org.jsoup.nodes.Document;
@@ -7,13 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import searchengine.config.Connection;
+import searchengine.config.Repositories;
 import searchengine.dto.indexing.PageParameters;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 
 import searchengine.model.SiteModel;
-import searchengine.repository.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
@@ -74,16 +73,12 @@ public class SiteParser extends RecursiveAction {
                     }
                 });
                 taskList.forEach(ForkJoinTask::join);
-            } catch (CancellationException exception) {
-                logger.error("Операция отменена!");
-            } catch (IOException | RuntimeException exception) {
-                logger.error("Время соединения истекло!");
-            } catch (InterruptedException exception) {
-                logger.error("Операция прервана!");
+            } catch (InterruptedException | IOException exception) {
+                logger.error("Операция прервана или время соединения истекло!");
             }
         }
     }
-    synchronized void postPageAndLemmas(PageParameters pageParam) {
+    public synchronized void postPageAndLemmas(PageParameters pageParam) {
         int cod = pageParam.getCod();
         SiteModel siteModel = pageParam.getSiteModel();
         String content = pageParam.getContent();
@@ -93,7 +88,7 @@ public class SiteParser extends RecursiveAction {
             addLemmasToDB(content, siteModel, path);
         }
     }
-    String getPath(String url, String siteUrl) {
+    public String getPath(String url, String siteUrl) {
         String path;
         if (url.equals(siteUrl)) {
             path = "/";

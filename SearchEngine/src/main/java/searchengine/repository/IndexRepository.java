@@ -1,6 +1,5 @@
 package searchengine.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -36,6 +35,4 @@ public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
     @Modifying
     @Query("update IndexModel i set i.rank = ?1 where i.page = ?2 and i.lemma = ?3")
     void updateIndex(float rank, Page page, Lemma lemma);
-
-
 }

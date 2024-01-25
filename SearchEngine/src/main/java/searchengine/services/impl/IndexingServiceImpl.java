@@ -9,11 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.Connection;
+import searchengine.config.Repositories;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.dto.indexing.PageParameters;
 import searchengine.model.*;
-import searchengine.repository.*;
+import searchengine.workers.SiteParser;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -22,14 +23,14 @@ import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
-public class IndexingService implements searchengine.services.IndexingService {
+public class IndexingServiceImpl implements searchengine.services.IndexingService {
     @Autowired
     private Repositories repositories;
     private final SitesList sites;
     @Getter
     private ExecutorService service;
     private ForkJoinPool pool;
-    private final Logger logger = LoggerFactory.getLogger(IndexingService.class);
+    private final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
 
     @Override
     public void getIndexing() {

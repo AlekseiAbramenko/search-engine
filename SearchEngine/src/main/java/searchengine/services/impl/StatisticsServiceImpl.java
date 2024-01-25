@@ -3,12 +3,12 @@ package searchengine.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import searchengine.config.Repositories;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteModel;
-import searchengine.repository.*;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -18,7 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class StatisticsService implements searchengine.services.StatisticsService {
+public class StatisticsServiceImpl implements searchengine.services.StatisticsService {
     @Autowired
     private Repositories repositories;
 

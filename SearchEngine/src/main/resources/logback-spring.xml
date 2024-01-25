@@ -21,7 +21,7 @@
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE" level="ERROR"/>
     </root>
-    <logger name="searchengine.services.impl.SiteParser" ref="FILE" level="ERROR"/>
-    <logger name="searchengine.services.impl.SearchingService" ref="FILE" level="ERROR"/>
-    <logger name="searchengine.services.impl.IndexingService" ref="FILE" level="ERROR"/>
+    <logger name="searchengine.workers.SiteParser" ref="FILE" level="ERROR"/>
+    <logger name="searchengine.services.impl.SearchingServiceImpl" ref="FILE" level="ERROR"/>
+    <logger name="searchengine.services.impl.IndexingServiceImpl" ref="FILE" level="ERROR"/>
 </configuration>

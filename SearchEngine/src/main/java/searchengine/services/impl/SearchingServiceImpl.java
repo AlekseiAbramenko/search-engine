@@ -2,8 +2,6 @@ package searchengine.services.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +13,9 @@ import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.SiteModel;
-import searchengine.repository.Repositories;
+import searchengine.config.Repositories;
+import searchengine.workers.DataListMaker;
+import searchengine.workers.LemmasParser;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -24,15 +24,15 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-public class SearchingService implements searchengine.services.SearchingService {
+public class SearchingServiceImpl implements searchengine.services.SearchingService {
     @Autowired
     private Repositories repositories;
-    private final Logger logger = LoggerFactory.getLogger(SearchingService.class);
+    private final Logger logger = LoggerFactory.getLogger(SearchingServiceImpl.class);
 
     public SearchResponse getSearching(RequestParameters requestParam) {
         SearchResponse response = new SearchResponse();
         String siteUrl = requestParam.getSite();
-        Map<String, String> queryLemmasMap = lemmasParser(requestParam.getQuery());
+        Map<String, String> queryLemmasMap = getLemmasMap(requestParam.getQuery());
         Map<Lemma, Integer> lemmasFrequency = getLemmasFrequency(queryLemmasMap, siteUrl);
         if (lemmasFrequency.isEmpty()) {
             response.setData(null);
@@ -87,7 +87,11 @@ public class SearchingService implements searchengine.services.SearchingService 
                 }
             }
             assert lemmaList != null;
-            lemmaList.forEach(lemma -> lemmasFrequency.put(lemma, lemma.getFrequency()));
+            lemmaList.forEach(lemma -> {
+                if (lemma.getFrequency() < 100) {
+                    lemmasFrequency.put(lemma, lemma.getFrequency());
+                }
+            });
         });
         return lemmasFrequency;
     }
@@ -116,7 +120,6 @@ public class SearchingService implements searchengine.services.SearchingService 
         Map<Page, Float> absRelevanceMap = new HashMap<>();
         Map<Page, Float> relevanceMap = new HashMap<>();
         AtomicInteger absRelevance = new AtomicInteger();
-
         if (pagesFinalList.size() > 1) {
             pagesFinalList.forEach(page -> {
                 sortedLemmasMap.keySet().forEach(lemma -> {
@@ -162,7 +165,6 @@ public class SearchingService implements searchengine.services.SearchingService 
         }
         List<Page> pages = new ArrayList<>();
         indexes.forEach(index -> pages.add(index.getPage()));
-
         return pages;
     }
     private List<Page> getPagesListForSingleSite(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
@@ -171,7 +173,6 @@ public class SearchingService implements searchengine.services.SearchingService 
                                             findPagesByLemmaBySite(firstLemma, siteUrl);
         List<Page> pages = new ArrayList<>();
         indexes.forEach(index -> pages.add(index.getPage()));
-
         return getPagesFinalListSingleSite(pages, firstLemma, sortedLemmasMap);
     }
     private List<Page> getPagesListForAllSites(Map<Lemma, Integer> sortedLemmasMap) {
@@ -181,13 +182,11 @@ public class SearchingService implements searchengine.services.SearchingService 
         String minUnionFrequencyLemma = sortedUnionLemmasMap.entrySet().iterator().next().getKey();
         List<IndexModel> indexes = getIndexes(unionLemmasMap, minUnionFrequencyLemma);
         indexes.forEach(index -> pages.add(index.getPage()));
-
         return getPagesFinalList(pages, minUnionFrequencyLemma, unionLemmasMap);
     }
     private List<Page> getPagesFinalList(List<Page> pages, String minUnionFrequencyLemma,
                                          Map<String, Map<List<Lemma>, Integer>> unionLemmasMap) {
         List<Page> pagesFinalList = new ArrayList<>(pages);
-
         Map<String, Map<List<Lemma>, Integer>> unionLemmasMapWithoutFirstLemma =
                 new LinkedHashMap<>(unionLemmasMap);
         unionLemmasMapWithoutFirstLemma.remove(minUnionFrequencyLemma);
@@ -204,7 +203,6 @@ public class SearchingService implements searchengine.services.SearchingService 
     private List<Page> getPagesFinalListSingleSite(List<Page> pages, Lemma firstLemma,
                                                    Map<Lemma, Integer> sortedLemmasMap) {
         List<Page> pagesFinalList = new ArrayList<>(pages);
-
         Map<Lemma, Integer> sortedMapWithoutFirstLemma = new LinkedHashMap<>(sortedLemmasMap);
         sortedMapWithoutFirstLemma.remove(firstLemma);
         sortedMapWithoutFirstLemma.keySet().forEach(lemma -> {
@@ -236,14 +234,12 @@ public class SearchingService implements searchengine.services.SearchingService 
                 unsortedMap.put(name, freq);
             });
         });
-
         return unsortedMap.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
-
     }
     private Map<String, Map<List<Lemma>, Integer>> getUnionLemmasMap(Map<Lemma, Integer> sortedLemmasMap) {
         Map<String, Map<List<Lemma>, Integer>> unionLemmasMap = new HashMap<>();
@@ -277,33 +273,8 @@ public class SearchingService implements searchengine.services.SearchingService 
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
     @SneakyThrows
-    private Map<String, String> lemmasParser(String query) {
-        LemmasParser parcer = new LemmasParser();
-        LuceneMorphology morphology = new RussianLuceneMorphology();
-        Map<String, String> lemmasMap = new HashMap<>();
-        String[] words = parcer.arrayContainsRussianWords(query);
-
-        for(String word : words) {
-            if (word.isBlank()) {
-                continue;
-            }
-
-            List<String> wordBaseForms = morphology.getMorphInfo(word);
-            if (parcer.anyWordBaseBelongToParticle(wordBaseForms)) {
-                continue;
-            }
-
-            List<String> normalForms = morphology.getNormalForms(word);
-            if (normalForms.isEmpty()) {
-                continue;
-            }
-
-            String normalWord = normalForms.getFirst();
-            if (normalWord.length() < 2) {
-                continue;
-            }
-            lemmasMap.put(normalWord, word);
-        }
-        return lemmasMap;
+    private Map<String, String> getLemmasMap(String query) {
+        LemmasParser parser = new LemmasParser();
+        return parser.getLemmasMapLemmaVsQueryWord(query);
     }
 }
