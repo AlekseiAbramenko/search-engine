@@ -107,16 +107,13 @@ public class SiteParser extends RecursiveAction {
     }
     @Transactional
     void postPage(PageParameters pageParam) {
-        SiteModel siteModel = pageParam.getSiteModel();
-        String path = pageParam.getUrl();
-        String content = pageParam.getContent();
-        int cod = pageParam.getCod();
         Page page = new Page();
-        page.setSite(siteModel);
-        page.setPath(path);
-        page.setCode(cod);
-        page.setContent(content);
+        page.setSite(pageParam.getSiteModel());
+        page.setPath(pageParam.getUrl());
+        page.setCode(pageParam.getCod());
+        page.setContent(pageParam.getContent());
         repositories.getPageRepository().save(page);
+        SiteModel siteModel = pageParam.getSiteModel();
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
@@ -175,9 +172,7 @@ public class SiteParser extends RecursiveAction {
     }
     @Transactional
     private void increaseLemmasFrequency(Lemma lemma) {
-        String name = lemma.getLemma();
-        SiteModel siteModel = lemma.getSite();
         int newFrequency = lemma.getFrequency() + 1;
-        repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, name, siteModel);
+        repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, lemma);
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
-import searchengine.model.SiteModel;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,9 +27,9 @@ public interface IndexRepository extends CrudRepository<IndexModel, Integer> {
     @Transactional
     @Modifying
     @Query("delete from IndexModel i where i.page = ?1")
-    void deleteIndexByPage(Page page);
+    void deleteIndexesByPage(Page page);
     @Query("select i from IndexModel i where i.page = ?1")
-    List<IndexModel> findLemmasByPage(Page page);
+    List<IndexModel> findIndexesByPage(Page page);
     @Transactional
     @Modifying
     @Query("update IndexModel i set i.rank = ?1 where i.page = ?2 and i.lemma = ?3")

@@ -19,7 +19,6 @@ import searchengine.workers.LemmasParser;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,13 +42,11 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
             if (pagesList.isEmpty()) {
                 response.setData(null);
                 response.setCount(0);
-                Lemma brokedLemma = lemmasFrequency.keySet().iterator().next();
-                logger.error("Лемма " + brokedLemma.getLemma() + " сайт "
-                        + brokedLemma.getSite().getName() + " существует, но индексы не найдены!");
+                logger.error("пустой список страниц");
             } else {
-                Map<Page, Float> relevanceMap = getRelevance(pagesList, sortedLemmasMap);
+                Map<Page, Float> relevanceMap = getRelevance(pagesList, sortedLemmasMap, requestParam.getLimit());
                 List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
-                int count = Math.min(requestParam.getLimit(), searchDataList.size());
+                int count = searchDataList.size();
                 SearchData[] allData = new SearchData[count];
                 for (int i = 0; i < count; i++) {
                     allData[i] = searchDataList.get(i);
@@ -97,14 +94,13 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
     }
 
     @SneakyThrows
-    private List<SearchData> getSearchDataList(Map<Page, Float> relevanceMap,
-                                               Map<String, String> queryLemmasMap) {
+    private List<SearchData> getSearchDataList(Map<Page, Float> relevanceMap, Map<String, String> queryLemmasMap) {
         List<SearchData> searchDataList = new ArrayList<>();
         List<Callable<SearchData>> dataListMakers = new ArrayList<>();
         relevanceMap.forEach((key, value) -> {
             dataListMakers.add(new DataListMaker(key, value, queryLemmasMap));
         });
-        ExecutorService service = Executors.newFixedThreadPool(dataListMakers.size());
+        ExecutorService service = Executors.newFixedThreadPool(8);
         List<Future<SearchData>> futures = service.invokeAll(dataListMakers);
         futures.forEach(future -> {
             try {
@@ -116,37 +112,34 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         });
         return searchDataList;
     }
-    private Map<Page, Float> getRelevance(List<Page> pagesFinalList, Map<Lemma, Integer> sortedLemmasMap) {
+    private Map<Page, Float> getRelevance(List<Page> pagesFinalList, Map<Lemma, Integer> sortedLemmasMap, int limit) {
         Map<Page, Float> absRelevanceMap = new HashMap<>();
         Map<Page, Float> relevanceMap = new HashMap<>();
-        AtomicInteger absRelevance = new AtomicInteger();
         if (pagesFinalList.size() > 1) {
             pagesFinalList.forEach(page -> {
                 sortedLemmasMap.keySet().forEach(lemma -> {
-                    if(repositories.getIndexRepository().findIndex(page, lemma).isPresent()) {
-                        int rank = (int) repositories.getIndexRepository().findIndex(page, lemma).get().getRank();
-                        absRelevance.addAndGet(rank);
+                    Optional<IndexModel> optionalIndexModel = repositories.getIndexRepository().findIndex(page, lemma);
+                    if(optionalIndexModel.isPresent()) {
+                        float rank = optionalIndexModel.get().getRank();
+                        absRelevanceMap.merge(page, rank, Float::sum);
                     }
                 });
-                absRelevanceMap.put(page, absRelevance.floatValue());
-                absRelevance.set(0);
             });
             float maxValue = Collections.max(absRelevanceMap.entrySet(), Map.Entry.comparingByValue()).getValue();
             absRelevanceMap.forEach((key, value) -> {
                 float newValue = value / maxValue;
                 relevanceMap.put(key, newValue);
             });
-        } else if (pagesFinalList.size() == 1) {
-            relevanceMap.put(pagesFinalList.getFirst(), 1F);
         } else {
-            relevanceMap.put(null, null);
+            relevanceMap.put(pagesFinalList.getFirst(), 1F);
         }
-        return getSortedPagesMap(relevanceMap);
+        return getSortedPagesMap(relevanceMap, limit);
     }
-    private Map<Page, Float> getSortedPagesMap(Map<Page, Float> unsortedMap){
+    private Map<Page, Float> getSortedPagesMap(Map<Page, Float> unsortedMap, int limit){
         if(!unsortedMap.isEmpty()) {
             return unsortedMap.entrySet().stream()
                     .sorted(Map.Entry.<Page, Float> comparingByValue().reversed())
+                    .limit(limit)
                     .collect(Collectors.toMap(
                             Map.Entry::getKey,
                             Map.Entry::getValue,
@@ -170,7 +163,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
     private List<Page> getPagesListForSingleSite(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         Lemma firstLemma = sortedLemmasMap.keySet().iterator().next();
         List<IndexModel> indexes = repositories.getIndexRepository().
-                                            findPagesByLemmaBySite(firstLemma, siteUrl);
+                findPagesByLemmaBySite(firstLemma, siteUrl);
         List<Page> pages = new ArrayList<>();
         indexes.forEach(index -> pages.add(index.getPage()));
         return getPagesFinalListSingleSite(pages, firstLemma, sortedLemmasMap);

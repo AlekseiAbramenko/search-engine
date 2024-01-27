@@ -96,38 +96,40 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         }
         return siteModel;
     }
+    @Transactional
     private void checkPageAndRemove(String path) {
         Optional<Page> optionalPage = repositories.getPageRepository().findPage(path);
         if (optionalPage.isPresent()) {
             Page page = optionalPage.get();
-            removePageInformation(page);
+            List<IndexModel> indexList = repositories.getIndexRepository().findIndexesByPage(page);
+            indexList.forEach(index -> {
+                Lemma lemma = index.getLemma();
+                if (lemma.getFrequency() > 1) {
+                    decreaseLemmasFrequency(lemma);
+                } else {
+                    repositories.getLemmaRepository().delete(lemma);
+                }
+            });
+            repositories.getIndexRepository().deleteIndexesByPage(page);
+            repositories.getPageRepository().delete(page);
         }
     }
-    private void removePageInformation(Page page) {
-        List<IndexModel> indexList = repositories.getIndexRepository().findLemmasByPage(page);
-        repositories.getIndexRepository().deleteIndexByPage(page);
-        indexList.forEach(index -> {
-            Lemma lemma = index.getLemma();
-            if (lemma.getFrequency() > 1) {
-                String name = lemma.getLemma();
-                SiteModel siteModel = lemma.getSite();
-                int newFrequency = lemma.getFrequency() - 1;
-                repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, name, siteModel);
-            } else {
-                repositories.getLemmaRepository().delete(lemma);
-            }
-        });
-        repositories.getPageRepository().delete(page);
+    @Transactional
+    private void decreaseLemmasFrequency(Lemma lemma) {
+        int newFrequency = lemma.getFrequency() - 1;
+        repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, lemma);
     }
+    @Transactional
     private void cleanDB(String url) {
         SiteModel siteModel = getSiteModelFromDB(url);
         List<Page> pagesList = repositories.getPageRepository().findPagesBySite(siteModel);
         pagesList.forEach(page -> {
-            repositories.getIndexRepository().deleteIndexByPage(page);
+            repositories.getIndexRepository().deleteIndexesByPage(page);
         });
-        repositories.getPageRepository().deletePagesBySite(siteModel);;
         repositories.getLemmaRepository().deleteLemmasBySite(siteModel);
+        repositories.getPageRepository().deletePagesBySite(siteModel);
         repositories.getSiteRepository().delete(siteModel);
+
     }
     @Transactional
     private void postSite(String name, String url) {
