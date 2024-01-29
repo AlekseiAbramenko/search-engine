@@ -77,7 +77,7 @@ public class SiteParser extends RecursiveAction {
                 logger.error("Операция прервана или время соединения истекло!");
             }
         }
-        taskList.clear();//???
+        taskList.clear();
     }
 
     public synchronized void postPageAndLemmas(PageParameters pageParam) {
@@ -149,6 +149,7 @@ public class SiteParser extends RecursiveAction {
                     }
                 } catch (IncorrectResultSizeDataAccessException ex) {
                     logger.error("дублирование: " + "lemma: " + key + "; site: " + siteModel.getName());
+                    removeDuplicatedLemma(key, siteModel);
                 }
             });
         } catch (IOException e) {
@@ -178,5 +179,11 @@ public class SiteParser extends RecursiveAction {
     private void increaseLemmasFrequency(Lemma lemma) {
         int newFrequency = lemma.getFrequency() + 1;
         repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, lemma);
+    }
+
+    private void removeDuplicatedLemma(String lemmaName, SiteModel siteModel) {
+        List<Lemma> lemmaList = repositories.getLemmaRepository().findLemmasList(lemmaName, siteModel);
+        lemmaList.forEach(lemma -> repositories.getLemmaRepository().delete(lemma));
+        logger.error("Лемма " + lemmaName + " сайт " + siteModel.getName() + " удалена");
     }
 }
