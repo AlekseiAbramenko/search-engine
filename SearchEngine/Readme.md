@@ -16,7 +16,7 @@ ___
     - названия и ссылки на сайты
     - статистика по каждому сайту
 
-    ![dashboard](/pictures/dashboard.jpg)
+    ![dashboard](/SearchEngine/src/main/resources/pictures/dashboard.jpg)
 * Вкладка MANAGEMENT используется для индексации:
     - всех сайтов из списка
     - одной страницы
