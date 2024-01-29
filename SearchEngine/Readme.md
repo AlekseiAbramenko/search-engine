@@ -16,17 +16,17 @@ ___
     - названия и ссылки на сайты
     - статистика по каждому сайту
 
-    ![dashboard](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/dashboard.png)
+    ![dashboard](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/dashboard.jpg)
 * Вкладка MANAGEMENT используется для индексации:
     - всех сайтов из списка
     - одной страницы
   
-    ![management](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/management.png)
+    ![management](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/management.jpg)
 * Вкладка SEARCH используется для поиска:
     - по всем сайтам
     - по выбранному из списка
 
-    ![search](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/search.png)
+    ![search](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/search.jpg)
 
 ### Настройки и запуск проекта
 - устанавливаем MySQL community server с официального сайта: [mysql.com/downloads/](https://www.mysql.com/downloads/)
