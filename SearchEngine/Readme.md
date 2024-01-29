@@ -16,7 +16,7 @@ ___
     - названия и ссылки на сайты
     - статистика по каждому сайту
 
-    ![dashboard](C:\Users\abori\IdeaProjects\java_basics\SearchEngine\src\main\resources\pictures\dashboard.png)
+    ![dashboard](https://gitlab.skillbox.ru/aleksei_abramenko/java_basics/-/blob/master/SearchEngine/src/main/resources/pictures/dashboard.png)
 * Вкладка MANAGEMENT используется для индексации:
     - всех сайтов из списка
     - одной страницы
