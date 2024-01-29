@@ -57,11 +57,13 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         }
         service.shutdown();
     }
+
     @Override
     public void stopIndexing() {
         pool.shutdownNow();
         service.shutdownNow();
     }
+
     @Override
     public void indexingPage(String link) {
         String siteUrl = "";
@@ -89,13 +91,17 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             logger.error("Время соединения истекло");
         }
     }
+
     private SiteModel checkSite(String siteName, String siteUrl) {
-       SiteModel siteModel = getSiteModelFromDB(siteUrl);
+        SiteModel siteModel = getSiteModelFromDB(siteUrl);
         if (siteModel == null) {
             postSite(siteName, siteUrl);
+            return getSiteModelFromDB(siteUrl);
+        } else {
+            return siteModel;
         }
-        return siteModel;
     }
+
     @Transactional
     private void checkPageAndRemove(String path) {
         Optional<Page> optionalPage = repositories.getPageRepository().findPage(path);
@@ -114,11 +120,13 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             repositories.getPageRepository().delete(page);
         }
     }
+
     @Transactional
     private void decreaseLemmasFrequency(Lemma lemma) {
         int newFrequency = lemma.getFrequency() - 1;
         repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, lemma);
     }
+
     @Transactional
     private void cleanDB(String url) {
         SiteModel siteModel = getSiteModelFromDB(url);
@@ -131,6 +139,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         repositories.getSiteRepository().delete(siteModel);
 
     }
+
     @Transactional
     private void postSite(String name, String url) {
         SiteModel siteModel = new SiteModel();
@@ -141,16 +150,19 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
+
     private SiteModel getSiteModelFromDB(String url) {
         Optional<SiteModel> siteModel = repositories.getSiteRepository().findSiteByUrl(url);
         return siteModel.orElse(null);
     }
+
     @Transactional
     private void setIndexedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.INDEXED);
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
+
     @Transactional
     private void setFailedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.FAILED);
@@ -158,16 +170,17 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
+
     @Override
     public boolean checkLink(String link) {
         boolean pageIsOk = false;
-            for (Site site : sites.getSites()) {
-                String substring = link.substring(0, site.getUrl().length());
-                if (substring.equals(site.getUrl())) {
-                    pageIsOk = true;
-                    break;
-                }
+        for (Site site : sites.getSites()) {
+            String substring = link.substring(0, site.getUrl().length());
+            if (substring.equals(site.getUrl())) {
+                pageIsOk = true;
+                break;
             }
+        }
         return pageIsOk
                 && !link.contains("#")
                 && !link.contains(".pdf")

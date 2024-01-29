@@ -77,7 +77,9 @@ public class SiteParser extends RecursiveAction {
                 logger.error("Операция прервана или время соединения истекло!");
             }
         }
+        taskList.clear();//???
     }
+
     public synchronized void postPageAndLemmas(PageParameters pageParam) {
         int cod = pageParam.getCod();
         SiteModel siteModel = pageParam.getSiteModel();
@@ -88,6 +90,7 @@ public class SiteParser extends RecursiveAction {
             addLemmasToDB(content, siteModel, path);
         }
     }
+
     public String getPath(String url, String siteUrl) {
         String path;
         if (url.equals(siteUrl)) {
@@ -97,6 +100,7 @@ public class SiteParser extends RecursiveAction {
         }
         return path;
     }
+
     private boolean checkLink(String url) {
         return !linksList.contains(url)
                 && !url.contains("#")
@@ -105,27 +109,29 @@ public class SiteParser extends RecursiveAction {
                 && !url.contains(".jpg")
                 && !url.contains(".php");
     }
+
     @Transactional
     void postPage(PageParameters pageParam) {
         Page page = new Page();
-        page.setSite(pageParam.getSiteModel());
+        SiteModel siteModel = pageParam.getSiteModel();
+        page.setSite(siteModel);
         page.setPath(pageParam.getUrl());
         page.setCode(pageParam.getCod());
         page.setContent(pageParam.getContent());
         repositories.getPageRepository().save(page);
-        SiteModel siteModel = pageParam.getSiteModel();
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
+
     @Transactional
     synchronized void addLemmasToDB(String content, SiteModel siteModel, String path) {
         LemmasParser lemmasParser = new LemmasParser();
+        HashMap<String, Integer> lemmas;
         try {
-            HashMap<String, Integer> lemmas = lemmasParser.countLemmasFromText(content);
+            lemmas = lemmasParser.countLemmasFromText(content);
             lemmas.forEach((key, value) -> {
                 try {
-                    Optional<Lemma> optionalLemma =
-                            repositories.getLemmaRepository().findLemma(key, siteModel);
+                    Optional<Lemma> optionalLemma = repositories.getLemmaRepository().findLemma(key, siteModel);
                     if (optionalLemma.isPresent()) {
                         increaseLemmasFrequency(optionalLemma.get());
                     } else {
@@ -142,7 +148,7 @@ public class SiteParser extends RecursiveAction {
                         }
                     }
                 } catch (IncorrectResultSizeDataAccessException ex) {
-                    logger.error("дублирование: " + "lemma: " + key + "; site: " + siteModel.getId());
+                    logger.error("дублирование: " + "lemma: " + key + "; site: " + siteModel.getName());
                 }
             });
         } catch (IOException e) {
@@ -158,18 +164,16 @@ public class SiteParser extends RecursiveAction {
         index.setRank(rank);
         repositories.getIndexRepository().save(index);
     }
+
     @Transactional
     synchronized void postLemma(String name, SiteModel siteModel) {
-        if (repositories.getLemmaRepository().findLemma(name, siteModel).isPresent()) {
-            logger.error("Попытка повторно добавить лемму " + name + " " + siteModel.getId());
-        } else {
-            Lemma lemma = new Lemma();
-            lemma.setLemma(name);
-            lemma.setFrequency(1);
-            lemma.setSite(siteModel);
-            repositories.getLemmaRepository().save(lemma);
-        }
+        Lemma lemma = new Lemma();
+        lemma.setLemma(name);
+        lemma.setFrequency(1);
+        lemma.setSite(siteModel);
+        repositories.getLemmaRepository().save(lemma);
     }
+
     @Transactional
     private void increaseLemmasFrequency(Lemma lemma) {
         int newFrequency = lemma.getFrequency() + 1;

@@ -70,6 +70,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         }
         return pagesList;
     }
+
     private Map<Lemma, Integer> getLemmasFrequency(Map<String, String> queryLemmasMap, String siteUrl) {
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
         queryLemmasMap.forEach((normalWord, word) -> {
@@ -112,6 +113,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         });
         return searchDataList;
     }
+
     private Map<Page, Float> getRelevance(List<Page> pagesFinalList, Map<Lemma, Integer> sortedLemmasMap, int limit) {
         Map<Page, Float> absRelevanceMap = new HashMap<>();
         Map<Page, Float> relevanceMap = new HashMap<>();
@@ -119,7 +121,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
             pagesFinalList.forEach(page -> {
                 sortedLemmasMap.keySet().forEach(lemma -> {
                     Optional<IndexModel> optionalIndexModel = repositories.getIndexRepository().findIndex(page, lemma);
-                    if(optionalIndexModel.isPresent()) {
+                    if (optionalIndexModel.isPresent()) {
                         float rank = optionalIndexModel.get().getRank();
                         absRelevanceMap.merge(page, rank, Float::sum);
                     }
@@ -135,10 +137,11 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         }
         return getSortedPagesMap(relevanceMap, limit);
     }
-    private Map<Page, Float> getSortedPagesMap(Map<Page, Float> unsortedMap, int limit){
-        if(!unsortedMap.isEmpty()) {
+
+    private Map<Page, Float> getSortedPagesMap(Map<Page, Float> unsortedMap, int limit) {
+        if (!unsortedMap.isEmpty()) {
             return unsortedMap.entrySet().stream()
-                    .sorted(Map.Entry.<Page, Float> comparingByValue().reversed())
+                    .sorted(Map.Entry.<Page, Float>comparingByValue().reversed())
                     .limit(limit)
                     .collect(Collectors.toMap(
                             Map.Entry::getKey,
@@ -148,6 +151,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
             return null;
         }
     }
+
     private List<Page> getPagesListForSingleWord(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         List<IndexModel> indexes;
         Lemma lemma = sortedLemmasMap.keySet().iterator().next();
@@ -160,6 +164,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         indexes.forEach(index -> pages.add(index.getPage()));
         return pages;
     }
+
     private List<Page> getPagesListForSingleSite(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         Lemma firstLemma = sortedLemmasMap.keySet().iterator().next();
         List<IndexModel> indexes = repositories.getIndexRepository().
@@ -168,6 +173,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         indexes.forEach(index -> pages.add(index.getPage()));
         return getPagesFinalListSingleSite(pages, firstLemma, sortedLemmasMap);
     }
+
     private List<Page> getPagesListForAllSites(Map<Lemma, Integer> sortedLemmasMap) {
         List<Page> pages = new ArrayList<>();
         Map<String, Map<List<Lemma>, Integer>> unionLemmasMap = getUnionLemmasMap(sortedLemmasMap);
@@ -177,6 +183,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         indexes.forEach(index -> pages.add(index.getPage()));
         return getPagesFinalList(pages, minUnionFrequencyLemma, unionLemmasMap);
     }
+
     private List<Page> getPagesFinalList(List<Page> pages, String minUnionFrequencyLemma,
                                          Map<String, Map<List<Lemma>, Integer>> unionLemmasMap) {
         List<Page> pagesFinalList = new ArrayList<>(pages);
@@ -193,6 +200,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         });
         return pagesFinalList;
     }
+
     private List<Page> getPagesFinalListSingleSite(List<Page> pages, Lemma firstLemma,
                                                    Map<Lemma, Integer> sortedLemmasMap) {
         List<Page> pagesFinalList = new ArrayList<>(pages);
@@ -208,6 +216,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         });
         return pagesFinalList;
     }
+
     private List<IndexModel> getIndexes(Map<String, Map<List<Lemma>, Integer>> unionLemmasMap,
                                         String minUnionFrequencyLemma) {
         List<IndexModel> indexes = new ArrayList<>();
@@ -220,6 +229,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         });
         return indexes;
     }
+
     private Map<String, Integer> getSortedUnionLemmasMap(Map<String, Map<List<Lemma>, Integer>> unionLemmasMap) {
         Map<String, Integer> unsortedMap = new LinkedHashMap<>();
         unionLemmasMap.forEach((name, map) -> {
@@ -234,6 +244,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
                         Map.Entry::getValue,
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
+
     private Map<String, Map<List<Lemma>, Integer>> getUnionLemmasMap(Map<Lemma, Integer> sortedLemmasMap) {
         Map<String, Map<List<Lemma>, Integer>> unionLemmasMap = new HashMap<>();
         sortedLemmasMap.forEach((lemma, frequency) -> {
@@ -257,7 +268,8 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
 
         return unionLemmasMap;
     }
-    private Map<Lemma, Integer> getSortedLemmasMap(Map<Lemma, Integer> unsortedMap){
+
+    private Map<Lemma, Integer> getSortedLemmasMap(Map<Lemma, Integer> unsortedMap) {
         return unsortedMap.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
                 .collect(Collectors.toMap(
@@ -265,6 +277,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
                         Map.Entry::getValue,
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
+
     @SneakyThrows
     private Map<String, String> getLemmasMap(String query) {
         LemmasParser parser = new LemmasParser();

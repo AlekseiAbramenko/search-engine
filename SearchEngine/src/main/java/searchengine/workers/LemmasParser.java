@@ -22,24 +22,24 @@ public class LemmasParser {
         HashMap<String, Integer> lemmas = new HashMap<>();
         String text = Jsoup.parse(html).text();
         String[] words = arrayContainsRussianWords(text);
-        for(String word : words) {
-            if(word.isBlank()) {
+        for (String word : words) {
+            if (word.isBlank()) {
                 continue;
             }
             List<String> wordBaseForms = morphology.getMorphInfo(word);
-            if(anyWordBaseBelongToParticle(wordBaseForms)) {
+            if (anyWordBaseBelongToParticle(wordBaseForms)) {
                 continue;
             }
             List<String> normalForms = morphology.getNormalForms(word);
-            if(normalForms.isEmpty()) {
+            if (normalForms.isEmpty()) {
                 continue;
             }
             String normalWord = normalForms.getFirst();
-            if(normalWord.length() < 2) {
+            if (normalWord.length() < 2) {
                 continue;
             }
-            if(lemmas.containsKey(normalWord)) {
-                lemmas.put(normalWord, lemmas.get(normalWord) +1);
+            if (lemmas.containsKey(normalWord)) {
+                lemmas.put(normalWord, lemmas.get(normalWord) + 1);
             } else {
                 lemmas.put(normalWord, 1);
             }
@@ -51,7 +51,7 @@ public class LemmasParser {
         LuceneMorphology morphology = new RussianLuceneMorphology();
         Map<String, String> lemmasMap = new HashMap<>();
         String[] words = arrayContainsRussianWords(query);
-        for(String word : words) {
+        for (String word : words) {
             if (word.isBlank()) {
                 continue;
             }
@@ -71,18 +71,21 @@ public class LemmasParser {
         }
         return lemmasMap;
     }
+
     public String[] arrayContainsRussianWords(String text) {
         return text.toLowerCase(Locale.ROOT)
                 .replaceAll("[^А-яёЁ\\s]+", "")
                 .trim()
                 .split("\\s");
     }
+
     public boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
         return wordBaseForms.stream().anyMatch(this::hasParticleProperty);
     }
+
     private boolean hasParticleProperty(String wordBase) {
-        for(String property : particlesNames) {
-            if(wordBase.toUpperCase().contains(property)) {
+        for (String property : particlesNames) {
+            if (wordBase.toUpperCase().contains(property)) {
                 return true;
             }
         }

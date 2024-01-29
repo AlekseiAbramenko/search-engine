@@ -38,6 +38,7 @@ public class DataListMaker implements Callable<SearchData> {
         Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, titleLemmasMap);
         return getFatWordsText(text, equalsWordsMap);
     }
+
     @SneakyThrows
     private String getSnippet(String content, Map<String, String> queryLemmasMap) {
         String text = Jsoup.parse(content).text();
@@ -63,11 +64,13 @@ public class DataListMaker implements Callable<SearchData> {
         }
         return String.valueOf(snippet);
     }
+
     @SneakyThrows
     private Map<String, String> getLemmasMap(String query) {
         LemmasParser parser = new LemmasParser();
         return parser.getLemmasMapLemmaVsQueryWord(query);
     }
+
     private Map<String, Set<String>> getEqualsWordsMap(Map<String, String> queryLemmasMap,
                                                        Map<String, String> textLemmasMap) {
         Map<String, Set<String>> equalsWordsMap = new HashMap<>();
@@ -76,17 +79,17 @@ public class DataListMaker implements Callable<SearchData> {
             textLemmasMap.forEach((textNormalWord, textWord) -> {
                 if (textNormalWord.equals(queryNormalWord)) {
                     equalsWordsMap.forEach((k, v) -> {
-                        if(k.equals(queryWord)) {
+                        if (k.equals(queryWord)) {
                             v.add(textWord);
                             v.add(queryWord);
                             v.add(textNormalWord);
-                            String textWordToUpperCase = textWord.substring(0,1).toUpperCase()
+                            String textWordToUpperCase = textWord.substring(0, 1).toUpperCase()
                                     + textWord.substring(1);
                             v.add(textWordToUpperCase);
-                            String queryWordToUpperCase = queryWord.substring(0,1).toUpperCase()
+                            String queryWordToUpperCase = queryWord.substring(0, 1).toUpperCase()
                                     + queryWord.substring(1);
                             v.add(queryWordToUpperCase);
-                            String textNormalWordToUpperCase = textNormalWord.substring(0,1).toUpperCase()
+                            String textNormalWordToUpperCase = textNormalWord.substring(0, 1).toUpperCase()
                                     + textNormalWord.substring(1);
                             v.add(textNormalWordToUpperCase);
                         }
@@ -96,6 +99,7 @@ public class DataListMaker implements Callable<SearchData> {
         });
         return equalsWordsMap;
     }
+
     private String getFatWordsText(String text, Map<String, Set<String>> equalsWordsMap) {
         List<String> equalsWordsList = new ArrayList<>();
         equalsWordsMap.forEach((word, wordsList) -> {
@@ -103,13 +107,14 @@ public class DataListMaker implements Callable<SearchData> {
         });
         String[] replacementList = new String[equalsWordsList.size()];
         String[] searchList = new String[equalsWordsList.size()];
-        for(int i=0; i<equalsWordsList.size(); i++) {
+        for (int i = 0; i < equalsWordsList.size(); i++) {
             String word = equalsWordsList.get(i);
             searchList[i] = word;
             replacementList[i] = "<b>" + word + "</b>";
         }
         return StringUtils.replaceEach(text, searchList, replacementList);
     }
+
     private Map<String, Set<String>> getFatEqualsWordsMap(Map<String, Set<String>> equalsWordsMap) {
         Map<String, Set<String>> fatEqualsWordsMap = new HashMap<>();
         equalsWordsMap.forEach((word, wordsList) -> {
@@ -122,10 +127,11 @@ public class DataListMaker implements Callable<SearchData> {
         });
         return fatEqualsWordsMap;
     }
+
     private List<String> getShortSentencesList(String[] sentences) {
         List<String> shortSentences = new ArrayList<>();
         for (String sentence : sentences) {
-            if(sentence.length() > 150) {
+            if (sentence.length() > 150) {
                 List<String> sentList = getShortSentences(sentence);
                 shortSentences.addAll(sentList);
             } else {
@@ -134,6 +140,7 @@ public class DataListMaker implements Callable<SearchData> {
         }
         return shortSentences;
     }
+
     private List<String> getShortSentences(String sentence) {
         String[] arrWords = sentence.split(" ");
         List<String> shortSentences = new ArrayList<>();
@@ -143,7 +150,7 @@ public class DataListMaker implements Callable<SearchData> {
         int length = arrWords.length;
         int maxLength = 150;
         while (index != length) {
-            if(count + arrWords[index].length() <= maxLength) {
+            if (count + arrWords[index].length() <= maxLength) {
                 count += arrWords[index].length() + 1;
                 stringBuilder.append(arrWords[index]).append(" ");
                 index++;
@@ -153,11 +160,12 @@ public class DataListMaker implements Callable<SearchData> {
                 count = 0;
             }
         }
-        if(!stringBuilder.isEmpty()) {
+        if (!stringBuilder.isEmpty()) {
             shortSentences.add(stringBuilder.toString());
         }
         return shortSentences;
     }
+
     private Map<String, Integer> getSentencesMap(List<String> sentencesList,
                                                  Map<String, Set<String>> fatEqualsWordsMap) {
         Map<String, Integer> sentencesMap = new HashMap<>();
@@ -175,6 +183,7 @@ public class DataListMaker implements Callable<SearchData> {
         });
         return sentencesMap;
     }
+
     private Map<String, Set<String>> getLastWordsMap(Map<String, Set<String>> fatEqualsWordsMap,
                                                      String maxWordsSentence) {
         Map<String, Set<String>> lastWordsMap = new HashMap<>();
@@ -192,6 +201,7 @@ public class DataListMaker implements Callable<SearchData> {
 
         return lastWordsMap;
     }
+
     private String getSnippetParts(Map<String, Set<String>> lastWordsMap, List<String> sentencesList) {
         StringBuilder stringBuilder = new StringBuilder();
         lastWordsMap.forEach((word, wordsSet) -> {
