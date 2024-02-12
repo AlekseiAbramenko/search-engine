@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Data
 @AllArgsConstructor
-public class LemmasParser {
+public class LemmaParser {
     private final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ", "ЧАСТ", "ПРЕДК", "МС"};
 
     public HashMap<String, Integer> countLemmasFromText(String html) throws IOException {

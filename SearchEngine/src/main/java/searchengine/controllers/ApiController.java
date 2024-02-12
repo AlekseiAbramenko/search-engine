@@ -27,9 +27,9 @@ public class ApiController {
         return ResponseEntity.ok(statisticsService.getStatistics());
     }
 
-    @GetMapping("/startIndexing")
+    @GetMapping("/startIndexing") //todo: добавить условия новый сервис
     public ResponseEntity startIndexing() {
-        if (indexingService.getService() == null || indexingService.getService().isTerminated()) {
+        if (indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) {
             indexingService.getIndexing();
             return ResponseEntity.ok(new IndexingResponseTrue());
         } else {
@@ -39,7 +39,7 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity stopIndexing() {
-        if (indexingService.getService() == null || indexingService.getService().isTerminated()) {
+        if (indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) {
             return ResponseEntity.ok(new IndexingResponseFalse("Индексация не запущена"));
         } else {
             indexingService.stopIndexing();
@@ -71,8 +71,8 @@ public class ApiController {
         if (query.isEmpty()) {
             return ResponseEntity.ok(new SearchResponseFalse("Задан пустой поисковый запрос."));
         }
-        if (indexingService.getService() != null) {
-            if (indexingService.getService().isTerminated()) {
+        if (indexingService.getSiteParserService() != null) {
+            if (indexingService.getSiteParserService().isTerminated()) {
                 return ResponseEntity.ok(searchingService.getSearching(requestParam));
             } else {
                 return ResponseEntity.ok(new SearchResponseFalse("Индексация ещё идёт. " +

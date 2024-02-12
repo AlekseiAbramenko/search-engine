@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import searchengine.repository.IndexRepository;
-import searchengine.repository.LemmaRepository;
-import searchengine.repository.PageRepository;
-import searchengine.repository.SiteRepository;
+import searchengine.repository.*;
 
 @Getter
 @Setter

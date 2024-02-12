@@ -6,6 +6,6 @@ public interface IndexingService {
     void getIndexing();
     void stopIndexing();
     void indexingPage(String link);
-    ExecutorService getService();
+    ExecutorService getSiteParserService();
     boolean checkLink(String path);
 }

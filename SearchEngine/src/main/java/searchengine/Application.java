@@ -9,3 +9,7 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }
+
+//todo: грузить все пачками
+//todo: индексация одной страницы, решить вопрос!
+//todo: сниппет в 3 строки, уже есть решение (более длинные предложения)

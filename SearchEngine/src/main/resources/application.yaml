@@ -12,13 +12,23 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        jdbc.batch_size: 50
+        order_updates: true
+        order_inserts: true
+#        batch_versioned_data: true
     hibernate:
       ddl-auto: update
     show-sql: true
 
 indexing-settings:
   sites:
-    - url: https://www.playback.ru
-      name: PlayBack.Ru
+#    - url: https://www.playback.ru
+#      name: PlayBack.Ru
     - url: https://www.svetlovka.ru
       name: Svetlovka.Ru
+#    - url: https://skillbox.ru
+#      name: Skillbox.Ru
+#    - url: https://nikoartgallery.com
+#      name: NikoArtGallery.com
+#    - url: https://dombulgakova.ru
+#      name: DomBulgakova.ru

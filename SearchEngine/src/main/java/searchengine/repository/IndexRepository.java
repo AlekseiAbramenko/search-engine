@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.IndexModel;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
+import searchengine.model.SiteModel;
 
 import java.util.List;
 import java.util.Optional;

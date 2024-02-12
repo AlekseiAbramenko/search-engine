@@ -67,7 +67,7 @@ public class DataListMaker implements Callable<SearchData> {
 
     @SneakyThrows
     private Map<String, String> getLemmasMap(String query) {
-        LemmasParser parser = new LemmasParser();
+        LemmaParser parser = new LemmaParser();
         return parser.getLemmasMapLemmaVsQueryWord(query);
     }
 

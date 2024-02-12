@@ -6,15 +6,16 @@ import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.Connection;
 import searchengine.config.Repositories;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
+import searchengine.dto.indexing.LocalDB;
 import searchengine.dto.indexing.PageParameters;
 import searchengine.model.*;
 import searchengine.workers.SiteParser;
+import searchengine.workers.Worker;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -24,48 +25,66 @@ import java.util.concurrent.*;
 @Service
 @RequiredArgsConstructor
 public class IndexingServiceImpl implements searchengine.services.IndexingService {
-    @Autowired
-    private Repositories repositories;
     private final SitesList sites;
+    private final Repositories repositories;
     @Getter
-    private ExecutorService service;
-    private ForkJoinPool pool;
+    private ExecutorService siteParserService;
+    private ForkJoinPool siteParserPool;
+    @Getter
+    private ForkJoinPool lemmasAndIndexesParserPool; //todo: добавть в контроллер
+    private SiteModel siteModel;
     private final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
 
     @Override
-    public void getIndexing() {
-        service = Executors.newSingleThreadExecutor();
+    public void getIndexing() {//todo: ЗАКОМИТИТЬ!
+        siteParserService = Executors.newSingleThreadExecutor();
         for (Site site : sites.getSites()) {
-            service.submit(() -> {
+            siteParserService.submit(() -> {
                 String url = site.getUrl();
                 String name = site.getName();
                 if (repositories.getSiteRepository().findSiteByUrl(url).isPresent()) {
                     cleanDB(url);
                 }
                 postSite(name, url);
-                SiteModel siteModel = getSiteModelFromDB(url);
-                CopyOnWriteArraySet<String> linksList = new CopyOnWriteArraySet<>();
+                siteModel = getSiteModelFromDB(url);
+                CopyOnWriteArraySet<String> linksSet = new CopyOnWriteArraySet<>();
+                CopyOnWriteArraySet<Page> pagesSet = new CopyOnWriteArraySet<>();
                 PageParameters pageParameters = new PageParameters(siteModel, url);
-                pool = new ForkJoinPool();
-                pool.invoke(new SiteParser(pageParameters, linksList, repositories));
-                if (pool.isShutdown() && siteModel.getStatus().equals(SiteStatus.INDEXING)) {
-                    setFailedStatus(siteModel);
-                } else {
-                    setIndexedStatus(siteModel);
-                }
+                siteParserPool = new ForkJoinPool();
+                //todo: почему первая 3 раза добавляется??? может они разные?? проверить!
+                // ее вручную в сервисе? уже с ней присылать linksSet!
+                List<Page> pagesList = siteParserPool.invoke(new SiteParser(pageParameters, linksSet, pagesSet));
+//todo: logger.info                System.out.println("PagesList is done. Size: " + pagesList.size());
+                pagesList.forEach(page -> repositories.getPageRepository().save(page));
+                LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
+//todo: logger.info                System.out.println(STR."LocalDB is done. LemmasList size: \{localDB.getLemmasList().size()} IndexesList size: \{localDB.getIndexesSet().size()}");
+                localDB.getLemmasList().forEach(lemma -> repositories.getLemmaRepository().save(lemma));
+                localDB.getIndexesSet().forEach(indexModel -> repositories.getIndexRepository().save(indexModel));
+                setIndexedStatus(siteModel);
             });
         }
-        service.shutdown();
+        siteParserService.shutdown();
+    }
+
+    private LocalDB addLemmasAndIndexes(List<Page> pagesList, SiteModel siteModel){
+        CopyOnWriteArraySet<IndexModel> indexesSet = new CopyOnWriteArraySet<>();
+        ConcurrentHashMap<String, Lemma> lemmasMap = new ConcurrentHashMap<>();
+        lemmasAndIndexesParserPool = new ForkJoinPool();
+        return lemmasAndIndexesParserPool.invoke(new Worker(siteModel, pagesList, indexesSet, lemmasMap));
     }
 
     @Override
     public void stopIndexing() {
-        pool.shutdownNow();
-        service.shutdownNow();
+        siteParserPool.shutdownNow();
+        siteParserService.shutdownNow();
+        if (lemmasAndIndexesParserPool != null ) {
+            lemmasAndIndexesParserPool.shutdownNow();
+        }
+        setFailedStatus(siteModel);
     }
 
     @Override
-    public void indexingPage(String link) {
+    public void indexingPage(String link) {//todo: переделать!
         String siteUrl = "";
         String siteName = "";
         for (Site site : sites.getSites()) {
@@ -78,15 +97,16 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         }
         try {
             Document doc = Connection.getConnection(link);
-            SiteParser siteParser = new SiteParser(repositories);
-            int cod = doc.connection().response().statusCode();
-            String content = doc.html();
+            SiteParser siteParser = new SiteParser();
             String path = siteParser.getPath(link, siteUrl);
+            int code = doc.connection().response().statusCode();
+            String content = doc.html();
             checkPageAndRemove(path);
             SiteModel siteModel = checkSite(siteName, siteUrl);
-            PageParameters pageParam = new PageParameters(siteModel, path, content, cod);
-            siteParser.postPageAndLemmas(pageParam);
-            setIndexedStatus(siteModel);
+            PageParameters pageParameters = new PageParameters(siteModel, path, content, code);
+            postPage(pageParameters);
+            Page page = repositories.getPageRepository().findPage(path).get();
+//            new LemmaAdder(page, repositories).run();
         } catch (IOException exception) {
             logger.error("Время соединения истекло");
         }
@@ -112,7 +132,9 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 Lemma lemma = index.getLemma();
                 if (lemma.getFrequency() > 1) {
                     decreaseLemmasFrequency(lemma);
-                } else {
+                } else { //todo: разобраться, в чем вопрос! здесь эксепшн вылетает
+                    System.out.println(lemma.getId());
+                    repositories.getIndexRepository().delete(index);
                     repositories.getLemmaRepository().delete(lemma);
                 }
             });
@@ -137,7 +159,6 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         repositories.getLemmaRepository().deleteLemmasBySite(siteModel);
         repositories.getPageRepository().deletePagesBySite(siteModel);
         repositories.getSiteRepository().delete(siteModel);
-
     }
 
     @Transactional
@@ -151,6 +172,17 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         repositories.getSiteRepository().save(siteModel);
     }
 
+    @Transactional
+    void postPage(PageParameters pageParam) {
+        Page page = new Page();
+        SiteModel siteModel = pageParam.getSiteModel();
+        page.setSite(siteModel);
+        page.setPath(pageParam.getUrl());
+        page.setCode(pageParam.getCod());
+        page.setContent(pageParam.getContent());
+        repositories.getPageRepository().save(page);
+    }
+
     private SiteModel getSiteModelFromDB(String url) {
         Optional<SiteModel> siteModel = repositories.getSiteRepository().findSiteByUrl(url);
         return siteModel.orElse(null);
@@ -159,6 +191,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     @Transactional
     private void setIndexedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.INDEXED);
+        siteModel.setLastError("");
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }

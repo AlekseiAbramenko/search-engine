@@ -18,7 +18,7 @@ public class Page {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     @JoinColumn(name = "site_id", nullable = false)
     private SiteModel site;
 
@@ -28,6 +28,6 @@ public class Page {
     @Column(nullable = false)
     private int code;
 
-    @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
+    @Column(length = 16777215, columnDefinition = "mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci")
     private String content;
 }

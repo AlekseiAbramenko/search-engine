@@ -13,6 +13,8 @@ import java.util.Optional;
 
 @Repository
 public interface PageRepository extends CrudRepository<Page, Integer> {
+//    @Transactional
+//    void saveAll(List<Page> pages);
     @Query("select count(p) from Page p where p.site = ?1")
     int pagesCountBySite(SiteModel site);
 

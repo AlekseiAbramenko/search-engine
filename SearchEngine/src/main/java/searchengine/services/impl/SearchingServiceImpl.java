@@ -1,10 +1,9 @@
 package searchengine.services.impl;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchData;
@@ -15,17 +14,16 @@ import searchengine.model.Page;
 import searchengine.model.SiteModel;
 import searchengine.config.Repositories;
 import searchengine.workers.DataListMaker;
-import searchengine.workers.LemmasParser;
+import searchengine.workers.LemmaParser;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SearchingServiceImpl implements searchengine.services.SearchingService {
-    @Autowired
-    private Repositories repositories;
+    private final Repositories repositories;
     private final Logger logger = LoggerFactory.getLogger(SearchingServiceImpl.class);
 
     public SearchResponse getSearching(RequestParameters requestParam) {
@@ -39,21 +37,15 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         } else {
             Map<Lemma, Integer> sortedLemmasMap = getSortedLemmasMap(lemmasFrequency);
             List<Page> pagesList = getPagesList(lemmasFrequency, siteUrl, sortedLemmasMap);
-            if (pagesList.isEmpty()) {
-                response.setData(null);
-                response.setCount(0);
-                logger.error("пустой список страниц");
-            } else {
-                Map<Page, Float> relevanceMap = getRelevance(pagesList, sortedLemmasMap, requestParam.getLimit());
-                List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
-                int count = searchDataList.size();
-                SearchData[] allData = new SearchData[count];
-                for (int i = 0; i < count; i++) {
-                    allData[i] = searchDataList.get(i);
-                }
-                response.setCount(count);
-                response.setData(allData);
+            Map<Page, Float> relevanceMap = getRelevance(pagesList, sortedLemmasMap, requestParam.getLimit());
+            List<SearchData> searchDataList = getSearchDataList(relevanceMap, queryLemmasMap);
+            int count = searchDataList.size();
+            SearchData[] allData = new SearchData[count];
+            for (int i = 0; i < count; i++) {
+                allData[i] = searchDataList.get(i);
             }
+            response.setCount(count);
+            response.setData(allData);
         }
         return response;
     }
@@ -280,7 +272,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
 
     @SneakyThrows
     private Map<String, String> getLemmasMap(String query) {
-        LemmasParser parser = new LemmasParser();
+        LemmaParser parser = new LemmaParser();
         return parser.getLemmasMapLemmaVsQueryWord(query);
     }
 }
