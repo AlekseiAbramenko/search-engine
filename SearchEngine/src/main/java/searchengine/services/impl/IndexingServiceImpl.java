@@ -15,7 +15,7 @@ import searchengine.dto.indexing.LocalDB;
 import searchengine.dto.indexing.PageParameters;
 import searchengine.model.*;
 import searchengine.workers.SiteParser;
-import searchengine.workers.Worker;
+import searchengine.workers.LemmaAndIndexCollector;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,12 +31,12 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     private ExecutorService siteParserService;
     private ForkJoinPool siteParserPool;
     @Getter
-    private ForkJoinPool lemmasAndIndexesParserPool; //todo: добавть в контроллер
+    private ForkJoinPool lemmasAndIndexesParserPool;
     private SiteModel siteModel;
     private final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
 
     @Override
-    public void getIndexing() {//todo: ЗАКОМИТИТЬ!
+    public void getIndexing() {
         siteParserService = Executors.newSingleThreadExecutor();
         for (Site site : sites.getSites()) {
             siteParserService.submit(() -> {
@@ -49,17 +49,13 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 siteModel = getSiteModelFromDB(url);
                 CopyOnWriteArraySet<String> linksSet = new CopyOnWriteArraySet<>();
                 CopyOnWriteArraySet<Page> pagesSet = new CopyOnWriteArraySet<>();
-                PageParameters pageParameters = new PageParameters(siteModel, url);
+                PageParameters pageParameters = new PageParameters(siteModel, url, linksSet, pagesSet);
                 siteParserPool = new ForkJoinPool();
-                //todo: почему первая 3 раза добавляется??? может они разные?? проверить!
-                // ее вручную в сервисе? уже с ней присылать linksSet!
-                List<Page> pagesList = siteParserPool.invoke(new SiteParser(pageParameters, linksSet, pagesSet));
-//todo: logger.info                System.out.println("PagesList is done. Size: " + pagesList.size());
-                pagesList.forEach(page -> repositories.getPageRepository().save(page));
+                List<Page> pagesList = siteParserPool.invoke(new SiteParser(pageParameters, repositories));
                 LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
-//todo: logger.info                System.out.println(STR."LocalDB is done. LemmasList size: \{localDB.getLemmasList().size()} IndexesList size: \{localDB.getIndexesSet().size()}");
-                localDB.getLemmasList().forEach(lemma -> repositories.getLemmaRepository().save(lemma));
-                localDB.getIndexesSet().forEach(indexModel -> repositories.getIndexRepository().save(indexModel));
+                repositories.getPageRepository().saveAll(pagesList);
+                repositories.getLemmaRepository().saveAll(localDB.getLemmasList());
+                repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
                 setIndexedStatus(siteModel);
             });
         }
@@ -70,7 +66,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         CopyOnWriteArraySet<IndexModel> indexesSet = new CopyOnWriteArraySet<>();
         ConcurrentHashMap<String, Lemma> lemmasMap = new ConcurrentHashMap<>();
         lemmasAndIndexesParserPool = new ForkJoinPool();
-        return lemmasAndIndexesParserPool.invoke(new Worker(siteModel, pagesList, indexesSet, lemmasMap));
+        return lemmasAndIndexesParserPool.invoke(new LemmaAndIndexCollector(siteModel, pagesList, indexesSet, lemmasMap));
     }
 
     @Override
@@ -84,7 +80,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     }
 
     @Override
-    public void indexingPage(String link) {//todo: переделать!
+    public void indexingPage(String link) {
         String siteUrl = "";
         String siteName = "";
         for (Site site : sites.getSites()) {
@@ -102,15 +98,31 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             int code = doc.connection().response().statusCode();
             String content = doc.html();
             checkPageAndRemove(path);
-            SiteModel siteModel = checkSite(siteName, siteUrl);
+            siteModel = checkSite(siteName, siteUrl);
             PageParameters pageParameters = new PageParameters(siteModel, path, content, code);
             postPage(pageParameters);
-            Page page = repositories.getPageRepository().findPage(path).get();
-//            new LemmaAdder(page, repositories).run();
+            postLemmasAndIndexes(repositories.getPageRepository().findPage(path).get());
         } catch (IOException exception) {
             logger.error("Время соединения истекло");
         }
     }
+
+    private void postLemmasAndIndexes(Page page) {
+        LocalDB localDB = addLemmasAndIndexes(List.of(page), siteModel);
+        logger.info(STR."LocalDB is done. LemmasList size: \{localDB.getLemmasList().size()} IndexesList size: \{localDB.getIndexesSet().size()}");
+        localDB.getLemmasList().forEach(lemma -> {
+            Optional<Lemma> optionalLemma = repositories.getLemmaRepository().findLemma(lemma.getLemma(), siteModel);
+            if(optionalLemma.isPresent()){
+                Lemma lemmaFromDB = optionalLemma.get();
+                repositories.getLemmaRepository().
+                        updateLemmasFrequency(lemmaFromDB.getFrequency() + 1, lemmaFromDB);
+            } else {
+                repositories.getLemmaRepository().save(lemma);
+            }
+        });
+        repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
+    }
+
 
     private SiteModel checkSite(String siteName, String siteUrl) {
         SiteModel siteModel = getSiteModelFromDB(siteUrl);
@@ -132,8 +144,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 Lemma lemma = index.getLemma();
                 if (lemma.getFrequency() > 1) {
                     decreaseLemmasFrequency(lemma);
-                } else { //todo: разобраться, в чем вопрос! здесь эксепшн вылетает
-                    System.out.println(lemma.getId());
+                } else {
                     repositories.getIndexRepository().delete(index);
                     repositories.getLemmaRepository().delete(lemma);
                 }

@@ -14,7 +14,7 @@ import lombok.Setter;
 @Table(name = "`index`")
 public class IndexModel {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
     @ManyToOne(cascade = CascadeType.MERGE)

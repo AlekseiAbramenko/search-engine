@@ -27,9 +27,10 @@ public class ApiController {
         return ResponseEntity.ok(statisticsService.getStatistics());
     }
 
-    @GetMapping("/startIndexing") //todo: добавить условия новый сервис
+    @GetMapping("/startIndexing")
     public ResponseEntity startIndexing() {
-        if (indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) {
+        if ((indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) ||
+                (indexingService.getLemmasAndIndexesParserPool() == null || indexingService.getLemmasAndIndexesParserPool().isTerminated())) {
             indexingService.getIndexing();
             return ResponseEntity.ok(new IndexingResponseTrue());
         } else {
@@ -39,7 +40,8 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity stopIndexing() {
-        if (indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) {
+        if ((indexingService.getSiteParserService() == null || indexingService.getSiteParserService().isTerminated()) ||
+                (indexingService.getLemmasAndIndexesParserPool() == null || indexingService.getLemmasAndIndexesParserPool().isTerminated())) {
             return ResponseEntity.ok(new IndexingResponseFalse("Индексация не запущена"));
         } else {
             indexingService.stopIndexing();

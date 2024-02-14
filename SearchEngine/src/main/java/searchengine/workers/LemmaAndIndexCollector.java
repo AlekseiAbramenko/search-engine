@@ -13,13 +13,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
-public class Worker extends RecursiveTask<LocalDB> {
+public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
     private SiteModel siteModel;
     private List<Page> pagesList;
     private CopyOnWriteArraySet<IndexModel> indexesSet;
     private ConcurrentHashMap<String, Lemma> lemmasMap;
 
-    public Worker(SiteModel siteModel, List<Page> pagesList, CopyOnWriteArraySet<IndexModel> indexesSet, ConcurrentHashMap<String, Lemma> lemmasMap) {
+    public LemmaAndIndexCollector(SiteModel siteModel, List<Page> pagesList, CopyOnWriteArraySet<IndexModel> indexesSet, ConcurrentHashMap<String, Lemma> lemmasMap) {
         this.siteModel = siteModel;
         this.pagesList = pagesList;
         this.indexesSet = indexesSet;
@@ -31,26 +31,24 @@ public class Worker extends RecursiveTask<LocalDB> {
         if (pagesList.size() > 1) {
             createSubtask().forEach(ForkJoinTask::join);
         } else {
-            System.out.printf("Task %s execute in thread %s lemmas %s indexes %s%n",
-                    this, Thread.currentThread().getName(), lemmasMap.size(), indexesSet.size());
             worker(pagesList.getFirst());
         }
         return new LocalDB(indexesSet, List.copyOf(lemmasMap.values()));
     }
 
-    private Collection<Worker> createSubtask() {
-        List<Worker> taskList = new ArrayList<>();
+    private Collection<LemmaAndIndexCollector> createSubtask() {
+        List<LemmaAndIndexCollector> taskList = new ArrayList<>();
         pagesList.forEach(page -> {
             List<Page> onePage = new ArrayList<>();
             onePage.add(page);
-            Worker task = new Worker(siteModel, onePage, indexesSet, lemmasMap);
+            LemmaAndIndexCollector task = new LemmaAndIndexCollector(siteModel, onePage, indexesSet, lemmasMap);
             task.fork();
             taskList.add(task);
         });
         return taskList;
     }
 
-    private void worker(Page page) {
+    private synchronized void worker(Page page) {
         LemmaParser lemmaParser = new LemmaParser();
         HashMap<String, Integer> pageLemmas;
         try {

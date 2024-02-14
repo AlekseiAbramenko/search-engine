@@ -15,7 +15,7 @@ import java.util.List;
 @Table(name = "site")
 public class SiteModel {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
     @Enumerated(EnumType.STRING)

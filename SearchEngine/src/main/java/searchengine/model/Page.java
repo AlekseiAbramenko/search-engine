@@ -15,7 +15,7 @@ import lombok.Setter;
 @Table(name = "page", indexes = @Index(columnList = "path", unique = true))
 public class Page {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)

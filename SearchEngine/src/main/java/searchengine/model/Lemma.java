@@ -11,7 +11,7 @@ import lombok.*;
 @Table(name = "lemma")
 public class Lemma {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
 
     @ManyToOne(cascade = CascadeType.MERGE)

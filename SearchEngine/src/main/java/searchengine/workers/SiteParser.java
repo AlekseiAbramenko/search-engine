@@ -5,6 +5,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import searchengine.config.Connection;
+import searchengine.config.Repositories;
 import searchengine.dto.indexing.PageParameters;
 import searchengine.model.Page;
 
@@ -18,17 +19,16 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
 public class SiteParser extends RecursiveTask<List<Page>> {
+    private Repositories repositories;
     private List<SiteParser> taskList;
-    private PageParameters pageParameters;
+    private PageParameters parsingParameters;
     private CopyOnWriteArraySet<String> linksSet;
     private CopyOnWriteArraySet<Page> pagesSet;
     private final Logger logger = LoggerFactory.getLogger(SiteParser.class);
 
-    public SiteParser(PageParameters pageParameters, CopyOnWriteArraySet<String> linksSet,
-                      CopyOnWriteArraySet<Page> pagesSet) {
-        this.pageParameters = pageParameters;
-        this.linksSet = linksSet;
-        this.pagesSet = pagesSet;
+    public SiteParser(PageParameters parsingParameters, Repositories repositories) {
+        this.parsingParameters = parsingParameters;
+        this.repositories = repositories;
     }
 
     public SiteParser() {
@@ -40,25 +40,27 @@ public class SiteParser extends RecursiveTask<List<Page>> {
             taskList.clear();
         } else {
             try {
-                String url = pageParameters.getUrl();
-                SiteModel siteModel = pageParameters.getSiteModel();
+                String url = parsingParameters.getUrl();
+                SiteModel siteModel = parsingParameters.getSiteModel();
+                linksSet = parsingParameters.getLinksSet();
+                pagesSet = parsingParameters.getPagesSet();
                 taskList = new ArrayList<>();
                 Document doc = Connection.getConnection(url);
                 Thread.sleep(500);
                 int code = doc.connection().response().statusCode();
                 String content = doc.html();
                 String path = getPath(url, siteModel.getUrl());
-                if(code == 200) {
-                    PageParameters pageParam = new PageParameters(siteModel, path, content, code);
-                    addPage(pageParam);
+                if(code == 200 && !url.equals(siteModel.getUrl())) {
+                    PageParameters addPageParameters = new PageParameters(siteModel, path, content, code);
+                    addPage(addPageParameters);
                 }
                 Elements elements = doc.select("a[href]");
                 elements.forEach(element -> {
                     String link = element.absUrl("href");
                     if (checkLink(link, siteModel.getUrl())) {
                         linksSet.add(link);
-                        PageParameters newPageParam = new PageParameters(siteModel, link);
-                        SiteParser task = new SiteParser(newPageParam, linksSet, pagesSet);
+                        PageParameters newParsingParameters = new PageParameters(siteModel, link, linksSet, pagesSet);
+                        SiteParser task = new SiteParser(newParsingParameters, repositories);
                         task.fork();
                         taskList.add(task);
                     }
@@ -71,13 +73,16 @@ public class SiteParser extends RecursiveTask<List<Page>> {
         return new ArrayList<>(pagesSet);
     }
 
-    private void addPage(PageParameters pageParam) {
+    private synchronized void addPage(PageParameters addPageParameters) {
         Page page = new Page();
-        page.setSite(pageParam.getSiteModel());
-        page.setCode(pageParam.getCod());
-        page.setPath(pageParam.getUrl());
-        page.setContent(pageParam.getContent());
+        SiteModel siteModel = addPageParameters.getSiteModel();
+        page.setSite(siteModel);
+        page.setCode(addPageParameters.getCod());
+        page.setPath(addPageParameters.getUrl());
+        page.setContent(addPageParameters.getContent());
         pagesSet.add(page);
+//        siteModel.setStatusTime(LocalDateTime.now());
+//        repositories.getSiteRepository().save(siteModel);
     }
 
     public String getPath(String url, String siteUrl) {
@@ -96,8 +101,14 @@ public class SiteParser extends RecursiveTask<List<Page>> {
                 && !url.contains("#")
                 && !url.contains("?utm")
                 && !url.contains(".pdf")
+                && !url.contains(".PDF")
                 && !url.contains(".png")
                 && !url.contains(".jpg")
+                && !url.contains(".jpeg")
+                && !url.contains(".JPG")
+                && !url.contains(".xlsx")
+                && !url.contains(".doc")
+                && !url.contains(".eps")
                 && !url.contains(".php");
     }
 }
