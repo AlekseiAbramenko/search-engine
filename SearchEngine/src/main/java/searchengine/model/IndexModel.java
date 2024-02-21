@@ -8,7 +8,6 @@ import lombok.Setter;
 
 @Setter
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "`index`")
@@ -27,4 +26,10 @@ public class IndexModel {
 
     @Column(name = "`rank`", columnDefinition = "FLOAT", nullable = false)
     private float rank;
+
+    public IndexModel(Page page, Lemma lemma, float rank) {
+        this.page = page;
+        this.lemma = lemma;
+        this.rank = rank;
+    }
 }

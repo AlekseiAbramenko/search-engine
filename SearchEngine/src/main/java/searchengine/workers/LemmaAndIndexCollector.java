@@ -59,29 +59,13 @@ public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
                     lemma = lemmasMap.get(lemmasName);
                     lemma.setFrequency(lemma.getFrequency() + 1);
                 } else {
-                    lemma = newLemma(lemmasName);
+                    lemma = new Lemma(siteModel, lemmasName,  1);
                 }
                 lemmasMap.put(lemmasName, lemma);
-                indexesSet.add(newIndexModel(lemma, page, rank));
+                indexesSet.add(new IndexModel(page, lemma, rank));
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private IndexModel newIndexModel(Lemma lemma, Page page, Integer rank) {
-        IndexModel indexModel = new IndexModel();
-        indexModel.setLemma(lemma);
-        indexModel.setPage(page);
-        indexModel.setRank(rank);
-        return indexModel;
-    }
-
-    private Lemma newLemma(String lemmasName) {
-        Lemma lemma = new Lemma();
-        lemma.setFrequency(1);
-        lemma.setLemma(lemmasName);
-        lemma.setSite(siteModel);
-        return lemma;
     }
 }

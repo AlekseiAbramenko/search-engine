@@ -6,7 +6,6 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "lemma")
 public class Lemma {
@@ -23,4 +22,10 @@ public class Lemma {
 
     @Column(nullable = false)
     private int frequency;
+
+    public Lemma(SiteModel site, String lemma, int frequency) {
+        this.site = site;
+        this.lemma = lemma;
+        this.frequency = frequency;
+    }
 }

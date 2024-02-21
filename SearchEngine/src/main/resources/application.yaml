@@ -13,7 +13,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         generate_statistics: true
-        jdbc.batch_size: 100000
+        jdbc.batch_size: 10000
         order_inserts: true
         order_updates: true
         batch_versioned_data: true
@@ -25,10 +25,10 @@ indexing-settings:
   sites:
 #    - url: https://www.playback.ru
 #      name: PlayBack.Ru
-    - url: https://www.svetlovka.ru
-      name: Svetlovka.Ru
-#    - url: https://skillbox.ru
-#      name: Skillbox.Ru
+#    - url: https://www.svetlovka.ru
+#      name: Svetlovka.Ru
+    - url: https://skillbox.ru
+      name: Skillbox.Ru
 #    - url: https://nikoartgallery.com
 #      name: NikoArtGallery.com
 #    - url: https://dombulgakova.ru

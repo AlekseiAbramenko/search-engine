@@ -12,8 +12,9 @@ import searchengine.config.Repositories;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.dto.indexing.LocalDB;
-import searchengine.dto.indexing.PageParameters;
+import searchengine.model.PageParameters;
 import searchengine.model.*;
+import searchengine.workers.LemmaParser;
 import searchengine.workers.SiteParser;
 import searchengine.workers.LemmaAndIndexCollector;
 
@@ -52,8 +53,8 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 PageParameters pageParameters = new PageParameters(siteModel, url, linksSet, pagesSet);
                 siteParserPool = new ForkJoinPool();
                 List<Page> pagesList = siteParserPool.invoke(new SiteParser(pageParameters, repositories));
-                LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
                 repositories.getPageRepository().saveAll(pagesList);
+                LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
                 repositories.getLemmaRepository().saveAll(localDB.getLemmasList());
                 repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
                 setIndexedStatus(siteModel);
@@ -79,6 +80,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         setFailedStatus(siteModel);
     }
 
+    @Transactional
     @Override
     public void indexingPage(String link) {
         String siteUrl = "";
@@ -99,30 +101,55 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             String content = doc.html();
             checkPageAndRemove(path);
             siteModel = checkSite(siteName, siteUrl);
-            PageParameters pageParameters = new PageParameters(siteModel, path, content, code);
-            postPage(pageParameters);
+            repositories.getPageRepository().save(new Page(siteModel, path, code, content));
+            repositories.getSiteRepository().updateStatusTime(LocalDateTime.now(), siteModel);
             postLemmasAndIndexes(repositories.getPageRepository().findPage(path).get());
         } catch (IOException exception) {
             logger.error("Время соединения истекло");
         }
     }
 
+    @Transactional
     private void postLemmasAndIndexes(Page page) {
-        LocalDB localDB = addLemmasAndIndexes(List.of(page), siteModel);
-        logger.info(STR."LocalDB is done. LemmasList size: \{localDB.getLemmasList().size()} IndexesList size: \{localDB.getIndexesSet().size()}");
-        localDB.getLemmasList().forEach(lemma -> {
-            Optional<Lemma> optionalLemma = repositories.getLemmaRepository().findLemma(lemma.getLemma(), siteModel);
-            if(optionalLemma.isPresent()){
-                Lemma lemmaFromDB = optionalLemma.get();
-                repositories.getLemmaRepository().
-                        updateLemmasFrequency(lemmaFromDB.getFrequency() + 1, lemmaFromDB);
-            } else {
-                repositories.getLemmaRepository().save(lemma);
-            }
-        });
-        repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
+        LemmaParser lemmaParser = new LemmaParser();
+        HashMap<String, Integer> lemmas;
+        try {
+            lemmas = lemmaParser.countLemmasFromText(page.getContent());
+            lemmas.forEach((key, value) -> {
+                List<Lemma> lemmasList = repositories.getLemmaRepository().findLemmasList(key, siteModel);
+                if (!lemmasList.isEmpty()) {
+                    Lemma lemmaFromDB = lemmasList.getFirst();
+                    repositories.getLemmaRepository().
+                            updateLemmasFrequency(lemmaFromDB.getFrequency() + 1, lemmaFromDB);
+                    if(lemmasList.size() > 1) {
+                        deleteLemmasDouble(lemmasList);
+                    }
+                } else {
+                    repositories.getLemmaRepository().save(new Lemma(siteModel, key, 1));
+                }
+                List<Lemma> newLemmasList = repositories.getLemmaRepository().findLemmasList(key, siteModel);
+                if (!lemmasList.isEmpty()) {
+                    Lemma lemma = newLemmasList.getFirst();
+                    if (repositories.getIndexRepository().existsIndex(page, lemma)) {
+                        repositories.getIndexRepository().updateIndex(value, page, lemma);
+                    } else {
+                        repositories.getIndexRepository().save(new IndexModel(page, lemma, value));
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    @Transactional
+    private void deleteLemmasDouble(List<Lemma> lemmasList) {
+        for (int i = 1; i < lemmasList.size(); i++) {
+            Lemma lemma = lemmasList.get(i);
+            repositories.getIndexRepository().deleteIndexesByLemma(lemma);
+            repositories.getLemmaRepository().delete(lemma);
+        }
+    }
 
     private SiteModel checkSite(String siteName, String siteUrl) {
         SiteModel siteModel = getSiteModelFromDB(siteUrl);
@@ -143,7 +170,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             indexList.forEach(index -> {
                 Lemma lemma = index.getLemma();
                 if (lemma.getFrequency() > 1) {
-                    decreaseLemmasFrequency(lemma);
+                    repositories.getLemmaRepository().updateLemmasFrequency(lemma.getFrequency() - 1, lemma);
                 } else {
                     repositories.getIndexRepository().delete(index);
                     repositories.getLemmaRepository().delete(lemma);
@@ -152,12 +179,6 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             repositories.getIndexRepository().deleteIndexesByPage(page);
             repositories.getPageRepository().delete(page);
         }
-    }
-
-    @Transactional
-    private void decreaseLemmasFrequency(Lemma lemma) {
-        int newFrequency = lemma.getFrequency() - 1;
-        repositories.getLemmaRepository().updateLemmasFrequency(newFrequency, lemma);
     }
 
     @Transactional
@@ -181,17 +202,6 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         siteModel.setLastError("");
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
-    }
-
-    @Transactional
-    void postPage(PageParameters pageParam) {
-        Page page = new Page();
-        SiteModel siteModel = pageParam.getSiteModel();
-        page.setSite(siteModel);
-        page.setPath(pageParam.getUrl());
-        page.setCode(pageParam.getCod());
-        page.setContent(pageParam.getContent());
-        repositories.getPageRepository().save(page);
     }
 
     private SiteModel getSiteModelFromDB(String url) {

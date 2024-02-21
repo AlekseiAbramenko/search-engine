@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import searchengine.config.Connection;
 import searchengine.config.Repositories;
-import searchengine.dto.indexing.PageParameters;
+import searchengine.model.PageParameters;
 import searchengine.model.Page;
 
 import searchengine.model.SiteModel;
@@ -24,6 +24,7 @@ public class SiteParser extends RecursiveTask<List<Page>> {
     private PageParameters parsingParameters;
     private CopyOnWriteArraySet<String> linksSet;
     private CopyOnWriteArraySet<Page> pagesSet;
+    private final String[] removal = new String[] {"#", "?utm", ".pdf", ".PDF", ".png", ".jpg", ".jpeg", ".JPG", ".xlsx", ".doc", ".eps", ".php"};
     private final Logger logger = LoggerFactory.getLogger(SiteParser.class);
 
     public SiteParser(PageParameters parsingParameters, Repositories repositories) {
@@ -51,8 +52,8 @@ public class SiteParser extends RecursiveTask<List<Page>> {
                 String content = doc.html();
                 String path = getPath(url, siteModel.getUrl());
                 if(code == 200 && !url.equals(siteModel.getUrl())) {
-                    PageParameters addPageParameters = new PageParameters(siteModel, path, content, code);
-                    addPage(addPageParameters);
+                    pagesSet.add(new Page(siteModel, path, code, content));
+//        repositories.getSiteRepository().updateStatusTime(LocalDateTime.now(), siteModel);
                 }
                 Elements elements = doc.select("a[href]");
                 elements.forEach(element -> {
@@ -73,18 +74,6 @@ public class SiteParser extends RecursiveTask<List<Page>> {
         return new ArrayList<>(pagesSet);
     }
 
-    private synchronized void addPage(PageParameters addPageParameters) {
-        Page page = new Page();
-        SiteModel siteModel = addPageParameters.getSiteModel();
-        page.setSite(siteModel);
-        page.setCode(addPageParameters.getCod());
-        page.setPath(addPageParameters.getUrl());
-        page.setContent(addPageParameters.getContent());
-        pagesSet.add(page);
-//        siteModel.setStatusTime(LocalDateTime.now());
-//        repositories.getSiteRepository().save(siteModel);
-    }
-
     public String getPath(String url, String siteUrl) {
         String path;
         if (url.equals(siteUrl)) {
@@ -96,19 +85,14 @@ public class SiteParser extends RecursiveTask<List<Page>> {
     }
 
     private boolean checkLink(String url, String siteUrl) {
-        return url.startsWith(siteUrl)
-                && !linksSet.contains(url)
-                && !url.contains("#")
-                && !url.contains("?utm")
-                && !url.contains(".pdf")
-                && !url.contains(".PDF")
-                && !url.contains(".png")
-                && !url.contains(".jpg")
-                && !url.contains(".jpeg")
-                && !url.contains(".JPG")
-                && !url.contains(".xlsx")
-                && !url.contains(".doc")
-                && !url.contains(".eps")
-                && !url.contains(".php");
+        if(!url.startsWith(siteUrl)) {
+            return false;
+        }
+        for (String rem : removal) {
+            if (url.contains(rem)) {
+                return false;
+            }
+        }
+        return !linksSet.contains(url);
     }
 }
