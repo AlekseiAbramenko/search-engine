@@ -16,20 +16,20 @@ spring:
         jdbc.batch_size: 10000
         order_inserts: true
         order_updates: true
-        batch_versioned_data: true
+        batch_versioned_data: false
     hibernate:
       ddl-auto: update
     show-sql: false
 
 indexing-settings:
   sites:
-#    - url: https://www.playback.ru
-#      name: PlayBack.Ru
+    - url: https://www.playback.ru
+      name: PlayBack.Ru
 #    - url: https://www.svetlovka.ru
 #      name: Svetlovka.Ru
-    - url: https://skillbox.ru
-      name: Skillbox.Ru
+#    - url: https://skillbox.ru
+#      name: Skillbox.Ru
 #    - url: https://nikoartgallery.com
 #      name: NikoArtGallery.com
-#    - url: https://dombulgakova.ru
-#      name: DomBulgakova.ru
+#    - url: https://et-cetera.ru/
+#      name: Et-Cetera.ru

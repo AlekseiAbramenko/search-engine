@@ -1,10 +1,7 @@
 package searchengine.workers;
 
 import searchengine.dto.indexing.LocalDB;
-import searchengine.model.IndexModel;
-import searchengine.model.Lemma;
-import searchengine.model.Page;
-import searchengine.model.SiteModel;
+import searchengine.model.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -19,11 +16,11 @@ public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
     private CopyOnWriteArraySet<IndexModel> indexesSet;
     private ConcurrentHashMap<String, Lemma> lemmasMap;
 
-    public LemmaAndIndexCollector(SiteModel siteModel, List<Page> pagesList, CopyOnWriteArraySet<IndexModel> indexesSet, ConcurrentHashMap<String, Lemma> lemmasMap) {
-        this.siteModel = siteModel;
-        this.pagesList = pagesList;
-        this.indexesSet = indexesSet;
-        this.lemmasMap = lemmasMap;
+    public LemmaAndIndexCollector(CollectorParameters collectorParameters) {
+        this.siteModel = collectorParameters.getSiteModel();
+        this.pagesList = collectorParameters.getPagesList();
+        this.indexesSet = collectorParameters.getIndexesSet();
+        this.lemmasMap = collectorParameters.getLemmasMap();
     }
 
     @Override
@@ -41,7 +38,8 @@ public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
         pagesList.forEach(page -> {
             List<Page> onePage = new ArrayList<>();
             onePage.add(page);
-            LemmaAndIndexCollector task = new LemmaAndIndexCollector(siteModel, onePage, indexesSet, lemmasMap);
+            CollectorParameters collectorParameters = new CollectorParameters(siteModel, onePage, indexesSet, lemmasMap);
+            LemmaAndIndexCollector task = new LemmaAndIndexCollector(collectorParameters);
             task.fork();
             taskList.add(task);
         });
@@ -59,7 +57,7 @@ public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
                     lemma = lemmasMap.get(lemmasName);
                     lemma.setFrequency(lemma.getFrequency() + 1);
                 } else {
-                    lemma = new Lemma(siteModel, lemmasName,  1);
+                    lemma = new Lemma(siteModel, lemmasName, 1);
                 }
                 lemmasMap.put(lemmasName, lemma);
                 indexesSet.add(new IndexModel(page, lemma, rank));

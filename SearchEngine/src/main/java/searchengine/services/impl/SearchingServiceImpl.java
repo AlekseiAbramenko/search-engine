@@ -78,7 +78,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
             }
             assert lemmaList != null;
             lemmaList.forEach(lemma -> {
-                if (lemma.getFrequency() < 100) {
+                if (lemma.getFrequency() < 10000) {
                     lemmasFrequency.put(lemma, lemma.getFrequency());
                 }
             });

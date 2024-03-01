@@ -46,12 +46,11 @@ public class DataListMaker implements Callable<SearchData> {
         Map<String, Set<String>> equalsWordsMap = getEqualsWordsMap(queryLemmasMap, textLemmasMap);
         Map<String, Set<String>> fatEqualsWordsMap = getFatEqualsWordsMap(equalsWordsMap);
         String fatWordsText = getFatWordsText(text, equalsWordsMap);
-        String[] sentences = fatWordsText.split("[.,?!]");
-        List<String> shortSentences = getShortSentencesList(sentences);
-        List<String> sentencesList = shortSentences.stream().filter(s -> s.contains("<b>")).toList();
+        List<String> sentences = getSentences(fatWordsText);
+        List<String> filteredSentences = sentences.stream().filter(s -> s.contains("<b>")).toList();
         int i = fatEqualsWordsMap.size();
         AtomicReference<String> snippet = new AtomicReference<>("");
-        Map<String, Integer> sentencesMap = getSentencesMap(sentencesList, fatEqualsWordsMap);
+        Map<String, Integer> sentencesMap = getSentencesMap(filteredSentences, fatEqualsWordsMap);
         Map.Entry<String, Integer> maxEntry =
                 Collections.max(sentencesMap.entrySet(), Map.Entry.comparingByValue());
         String maxWordsSentence = maxEntry.getKey();
@@ -59,7 +58,7 @@ public class DataListMaker implements Callable<SearchData> {
             snippet.set(maxWordsSentence);
         } else {
             Map<String, Set<String>> lastWordsMap = getLastWordsMap(fatEqualsWordsMap, maxWordsSentence);//слова, которые нужно найти и склеить
-            String snippetParts = getSnippetParts(lastWordsMap, sentencesList);
+            String snippetParts = getSnippetParts(lastWordsMap, filteredSentences);
             snippet.set("..." + maxWordsSentence + snippetParts);
         }
         return String.valueOf(snippet);
@@ -128,27 +127,14 @@ public class DataListMaker implements Callable<SearchData> {
         return fatEqualsWordsMap;
     }
 
-    private List<String> getShortSentencesList(String[] sentences) {
-        List<String> shortSentences = new ArrayList<>();
-        for (String sentence : sentences) {
-            if (sentence.length() > 150) {
-                List<String> sentList = getShortSentences(sentence);
-                shortSentences.addAll(sentList);
-            } else {
-                shortSentences.add(sentence);
-            }
-        }
-        return shortSentences;
-    }
-
-    private List<String> getShortSentences(String sentence) {
+    private List<String> getSentences(String sentence) {
         String[] arrWords = sentence.split(" ");
         List<String> shortSentences = new ArrayList<>();
         StringBuilder stringBuilder = new StringBuilder();
         int count = 0;
         int index = 0;
         int length = arrWords.length;
-        int maxLength = 150;
+        int maxLength = 230;
         while (index != length) {
             if (count + arrWords[index].length() <= maxLength) {
                 count += arrWords[index].length() + 1;

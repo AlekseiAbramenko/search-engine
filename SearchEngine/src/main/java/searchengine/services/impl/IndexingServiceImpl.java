@@ -12,7 +12,7 @@ import searchengine.config.Repositories;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.dto.indexing.LocalDB;
-import searchengine.model.PageParameters;
+import searchengine.model.ParsingParameters;
 import searchengine.model.*;
 import searchengine.workers.LemmaParser;
 import searchengine.workers.SiteParser;
@@ -50,9 +50,9 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 siteModel = getSiteModelFromDB(url);
                 CopyOnWriteArraySet<String> linksSet = new CopyOnWriteArraySet<>();
                 CopyOnWriteArraySet<Page> pagesSet = new CopyOnWriteArraySet<>();
-                PageParameters pageParameters = new PageParameters(siteModel, url, linksSet, pagesSet);
+                ParsingParameters parsingParameters = new ParsingParameters(siteModel, url, linksSet, pagesSet);
                 siteParserPool = new ForkJoinPool();
-                List<Page> pagesList = siteParserPool.invoke(new SiteParser(pageParameters, repositories));
+                List<Page> pagesList = siteParserPool.invoke(new SiteParser(parsingParameters, repositories));
                 repositories.getPageRepository().saveAll(pagesList);
                 LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
                 repositories.getLemmaRepository().saveAll(localDB.getLemmasList());
@@ -63,18 +63,19 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
         siteParserService.shutdown();
     }
 
-    private LocalDB addLemmasAndIndexes(List<Page> pagesList, SiteModel siteModel){
+    private LocalDB addLemmasAndIndexes(List<Page> pagesList, SiteModel siteModel) {
         CopyOnWriteArraySet<IndexModel> indexesSet = new CopyOnWriteArraySet<>();
         ConcurrentHashMap<String, Lemma> lemmasMap = new ConcurrentHashMap<>();
         lemmasAndIndexesParserPool = new ForkJoinPool();
-        return lemmasAndIndexesParserPool.invoke(new LemmaAndIndexCollector(siteModel, pagesList, indexesSet, lemmasMap));
+        CollectorParameters collectorParameters = new CollectorParameters(siteModel, pagesList, indexesSet, lemmasMap);
+        return lemmasAndIndexesParserPool.invoke(new LemmaAndIndexCollector(collectorParameters));
     }
 
     @Override
     public void stopIndexing() {
         siteParserPool.shutdownNow();
         siteParserService.shutdownNow();
-        if (lemmasAndIndexesParserPool != null ) {
+        if (lemmasAndIndexesParserPool != null) {
             lemmasAndIndexesParserPool.shutdownNow();
         }
         setFailedStatus(siteModel);
@@ -121,7 +122,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                     Lemma lemmaFromDB = lemmasList.getFirst();
                     repositories.getLemmaRepository().
                             updateLemmasFrequency(lemmaFromDB.getFrequency() + 1, lemmaFromDB);
-                    if(lemmasList.size() > 1) {
+                    if (lemmasList.size() > 1) {
                         deleteLemmasDouble(lemmasList);
                     }
                 } else {
