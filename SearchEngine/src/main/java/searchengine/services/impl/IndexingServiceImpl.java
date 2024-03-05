@@ -185,6 +185,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     @Transactional
     private void cleanDB(String url) {
         SiteModel siteModel = getSiteModelFromDB(url);
+        setIndexingStatus(siteModel);
         List<Page> pagesList = repositories.getPageRepository().findPagesBySite(siteModel);
         pagesList.forEach(page -> {
             repositories.getIndexRepository().deleteIndexesByPage(page);
@@ -222,6 +223,14 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     private void setFailedStatus(SiteModel siteModel) {
         siteModel.setStatus(SiteStatus.FAILED);
         siteModel.setLastError("Индексация прервана пользователем");
+        siteModel.setStatusTime(LocalDateTime.now());
+        repositories.getSiteRepository().save(siteModel);
+    }
+
+    @Transactional
+    private void setIndexingStatus(SiteModel siteModel) {
+        siteModel.setStatus(SiteStatus.INDEXING);
+        siteModel.setLastError("");
         siteModel.setStatusTime(LocalDateTime.now());
         repositories.getSiteRepository().save(siteModel);
     }
