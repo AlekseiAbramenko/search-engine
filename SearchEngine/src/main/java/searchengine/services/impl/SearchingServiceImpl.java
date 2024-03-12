@@ -18,6 +18,7 @@ import searchengine.workers.LemmaParser;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,13 +26,14 @@ import java.util.stream.Collectors;
 public class SearchingServiceImpl implements searchengine.services.SearchingService {
     private final Repositories repositories;
     private final Logger logger = LoggerFactory.getLogger(SearchingServiceImpl.class);
+    private int queryWordsCount;
 
     public SearchResponse getSearching(RequestParameters requestParam) {
         SearchResponse response = new SearchResponse();
         String siteUrl = requestParam.getSite();
         Map<String, String> queryLemmasMap = getLemmasMap(requestParam.getQuery());
         Map<Lemma, Integer> lemmasFrequency = getLemmasFrequency(queryLemmasMap, siteUrl);
-        if (lemmasFrequency.isEmpty()) {
+        if (lemmasFrequency.isEmpty() || lemmasFrequency.size() < queryWordsCount) {
             response.setData(null);
             response.setCount(0);
         } else {
@@ -65,6 +67,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
 
     private Map<Lemma, Integer> getLemmasFrequency(Map<String, String> queryLemmasMap, String siteUrl) {
         Map<Lemma, Integer> lemmasFrequency = new HashMap<>();
+        queryWordsCount = queryLemmasMap.size();
         queryLemmasMap.forEach((normalWord, word) -> {
             List<Lemma> lemmaList = null;
             if (siteUrl == null) {
@@ -80,6 +83,8 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
             lemmaList.forEach(lemma -> {
                 if (lemma.getFrequency() < 10000) {
                     lemmasFrequency.put(lemma, lemma.getFrequency());
+                } else {
+                    queryWordsCount--;
                 }
             });
         });
@@ -159,8 +164,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
 
     private List<Page> getPagesListForSingleSite(Map<Lemma, Integer> sortedLemmasMap, String siteUrl) {
         Lemma firstLemma = sortedLemmasMap.keySet().iterator().next();
-        List<IndexModel> indexes = repositories.getIndexRepository().
-                findPagesByLemmaBySite(firstLemma, siteUrl);
+        List<IndexModel> indexes = repositories.getIndexRepository().findPagesByLemmaBySite(firstLemma, siteUrl);
         List<Page> pages = new ArrayList<>();
         indexes.forEach(index -> pages.add(index.getPage()));
         return getPagesFinalListSingleSite(pages, firstLemma, sortedLemmasMap);
@@ -179,13 +183,11 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
     private List<Page> getPagesFinalList(List<Page> pages, String minUnionFrequencyLemma,
                                          Map<String, Map<List<Lemma>, Integer>> unionLemmasMap) {
         List<Page> pagesFinalList = new ArrayList<>(pages);
-        Map<String, Map<List<Lemma>, Integer>> unionLemmasMapWithoutFirstLemma =
-                new LinkedHashMap<>(unionLemmasMap);
+        Map<String, Map<List<Lemma>, Integer>> unionLemmasMapWithoutFirstLemma = new LinkedHashMap<>(unionLemmasMap);
         unionLemmasMapWithoutFirstLemma.remove(minUnionFrequencyLemma);
         unionLemmasMapWithoutFirstLemma.forEach((name, map) -> {
             pages.forEach(page -> {
-                if (pagesFinalList.contains(page)
-                        && !repositories.getIndexRepository().existsIndex2(page, name)) {
+                if (pagesFinalList.contains(page) && !repositories.getIndexRepository().existsIndex2(page, name)) {
                     pagesFinalList.remove(page);
                 }
             });
@@ -200,8 +202,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         sortedMapWithoutFirstLemma.remove(firstLemma);
         sortedMapWithoutFirstLemma.keySet().forEach(lemma -> {
             pages.forEach(page -> {
-                if (pagesFinalList.contains(page)
-                        && !repositories.getIndexRepository().existsIndex(page, lemma)) {
+                if (pagesFinalList.contains(page) && !repositories.getIndexRepository().existsIndex(page, lemma)) {
                     pagesFinalList.remove(page);
                 }
             });
@@ -214,8 +215,7 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
         List<IndexModel> indexes = new ArrayList<>();
         unionLemmasMap.get(minUnionFrequencyLemma).forEach((list, freq) -> {
             list.forEach(l -> {
-                List<IndexModel> temporaryList =
-                        repositories.getIndexRepository().findIndexesByLemma(l);
+                List<IndexModel> temporaryList = repositories.getIndexRepository().findIndexesByLemma(l);
                 indexes.addAll(temporaryList);
             });
         });
