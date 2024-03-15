@@ -13,19 +13,17 @@ import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.SiteModel;
 import searchengine.config.Repositories;
-import searchengine.workers.DataListMaker;
+import searchengine.workers.DataCollector;
 import searchengine.workers.LemmaParser;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class SearchingServiceImpl implements searchengine.services.SearchingService {
     private final Repositories repositories;
-    private final Logger logger = LoggerFactory.getLogger(SearchingServiceImpl.class);
     private int queryWordsCount;
 
     public SearchResponse getSearching(RequestParameters requestParam) {
@@ -93,22 +91,9 @@ public class SearchingServiceImpl implements searchengine.services.SearchingServ
 
     @SneakyThrows
     private List<SearchData> getSearchDataList(Map<Page, Float> relevanceMap, Map<String, String> queryLemmasMap) {
+        ForkJoinPool dataCollectorPool = new ForkJoinPool();
         List<SearchData> searchDataList = new ArrayList<>();
-        List<Callable<SearchData>> dataListMakers = new ArrayList<>();
-        relevanceMap.forEach((key, value) -> {
-            dataListMakers.add(new DataListMaker(key, value, queryLemmasMap));
-        });
-        ExecutorService service = Executors.newFixedThreadPool(8);
-        List<Future<SearchData>> futures = service.invokeAll(dataListMakers);
-        futures.forEach(future -> {
-            try {
-                searchDataList.add(future.get());
-            } catch (InterruptedException | ExecutionException e) {
-                logger.error("При создании DataList возникла ошибка или поток был прерван.");
-                throw new RuntimeException(e);
-            }
-        });
-        return searchDataList;
+        return dataCollectorPool.invoke(new DataCollector(relevanceMap, queryLemmasMap, searchDataList));
     }
 
     private Map<Page, Float> getRelevance(List<Page> pagesFinalList, Map<Lemma, Integer> sortedLemmasMap, int limit) {

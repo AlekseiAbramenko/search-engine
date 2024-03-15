@@ -1,6 +1,6 @@
 package searchengine.workers;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -9,27 +9,52 @@ import searchengine.dto.search.SearchData;
 import searchengine.model.Page;
 
 import java.util.*;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-@RequiredArgsConstructor
-public class DataListMaker implements Callable<SearchData> {
-    private final Page page;
-    private final Float value;
-    private final Map<String, String> queryLemmasMap;
+@AllArgsConstructor
+public class DataCollector extends RecursiveTask<List<SearchData>> {
+    private Map<Page, Float> relevanceMap;
+    private Map<String, String> queryLemmasMap;
+    private List<SearchData> searchDataList;
 
     @Override
-    public SearchData call() {
-        SearchData pageData = new SearchData();
-        pageData.setSite(page.getSite().getUrl());
-        pageData.setSiteName(page.getSite().getName());
-        pageData.setUri(page.getPath());
-        pageData.setTitle(getTitle(page.getContent(), queryLemmasMap));
-        pageData.setSnippet(getSnippet(page.getContent(), queryLemmasMap));
-        pageData.setRelevance(value);
-        return pageData;
+    protected List<SearchData> compute() {
+        if(relevanceMap.size() > 1) {
+            createSubtask().forEach(ForkJoinTask::join);
+        } else {
+            worker(relevanceMap);
+        }
+        return searchDataList;
     }
+
+    private void worker(Map<Page, Float> relevanceMap) {
+        relevanceMap.forEach((page, value) -> {
+            SearchData pageData = new SearchData();
+            pageData.setSite(page.getSite().getUrl());
+            pageData.setSiteName(page.getSite().getName());
+            pageData.setUri(page.getPath());
+            pageData.setTitle(getTitle(page.getContent(), queryLemmasMap));
+            pageData.setSnippet(getSnippet(page.getContent(), queryLemmasMap));
+            pageData.setRelevance(value);
+            searchDataList.add(pageData);
+        });
+    }
+
+    private Collection<DataCollector> createSubtask() {
+        List<DataCollector> taskList = new ArrayList<>();
+        relevanceMap.forEach((page, value) -> {
+            Map<Page, Float> onePage = new HashMap<>();
+            onePage.put(page, value);
+            DataCollector task = new DataCollector(onePage, queryLemmasMap, searchDataList);
+            task.fork();
+            taskList.add(task);
+        });
+        return taskList;
+    }
+
 
     private String getTitle(String content, Map<String, String> queryLemmasMap) {
         Document doc = Jsoup.parse(content);
