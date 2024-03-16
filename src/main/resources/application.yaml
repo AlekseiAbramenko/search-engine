@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: root
+    password: testtest
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        generate_statistics: true
+        jdbc.batch_size: 10000
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: false
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+indexing-settings:
+  sites:
+    - url: https://www.playback.ru
+      name: PlayBack.Ru
+#    - url: https://www.svetlovka.ru
+#      name: Svetlovka.Ru
+#    - url: https://skillbox.ru
+#      name: Skillbox.Ru
+#    - url: https://nikoartgallery.com
+#      name: NikoArtGallery.com
+#    - url: https://et-cetera.ru/
+#      name: Et-Cetera.ru
