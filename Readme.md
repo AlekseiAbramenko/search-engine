@@ -16,17 +16,17 @@ ___
     - названия и ссылки на сайты
     - статистика по каждому сайту
 
-    ![dashboard](/SearchEngine/src/main/resources/pictures/dashboard.jpg)
+    ![dashboard](/search-engine/src/main/resources/pictures/dashboard.jpg)
 * Вкладка MANAGEMENT используется для индексации:
     - всех сайтов из списка
     - одной страницы
   
-    ![management](/SearchEngine/src/main/resources/pictures/management.jpg)
+    ![management](/search-engine/src/main/resources/pictures/management.jpg)
 * Вкладка SEARCH используется для поиска:
     - по всем сайтам
     - по выбранному из списка
 
-    ![search](/SearchEngine/src/main/resources/pictures/search.jpg)
+    ![search](/search-engine/src/main/resources/pictures/search.jpg)
 
 ### Настройки и запуск проекта
 - устанавливаем MySQL community server с официального сайта: [mysql.com/downloads/](https://www.mysql.com/downloads/)
