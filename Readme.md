@@ -15,18 +15,18 @@ ___
       - количество лемм
     - названия и ссылки на сайты
     - статистика по каждому сайту
-
-    ![dashboard](/search-engine/src/main/resources/pictures/dashboard.jpg)
+    
+    ![dashboard](/src/main/resources/pictures/dashboard.jpg)
 * Вкладка MANAGEMENT используется для индексации:
     - всех сайтов из списка
     - одной страницы
   
-    ![management](/search-engine/src/main/resources/pictures/management.jpg)
+    ![management](/src/main/resources/pictures/management.jpg)
 * Вкладка SEARCH используется для поиска:
     - по всем сайтам
     - по выбранному из списка
 
-    ![search](/search-engine/src/main/resources/pictures/search.jpg)
+    ![search](/src/main/resources/pictures/search.jpg)
 
 ### Настройки и запуск проекта
 - устанавливаем MySQL community server с официального сайта: [mysql.com/downloads/](https://www.mysql.com/downloads/)
