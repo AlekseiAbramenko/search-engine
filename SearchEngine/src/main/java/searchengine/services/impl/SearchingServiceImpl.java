@@ -2,8 +2,6 @@ package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.RequestParameters;
 import searchengine.dto.search.SearchData;
