@@ -11,20 +11,22 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 
 public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
+    private CollectorParameters collectorParameters;
     private SiteModel siteModel;
     private List<Page> pagesList;
     private CopyOnWriteArraySet<IndexModel> indexesSet;
     private ConcurrentHashMap<String, Lemma> lemmasMap;
 
     public LemmaAndIndexCollector(CollectorParameters collectorParameters) {
-        this.siteModel = collectorParameters.getSiteModel();
-        this.pagesList = collectorParameters.getPagesList();
-        this.indexesSet = collectorParameters.getIndexesSet();
-        this.lemmasMap = collectorParameters.getLemmasMap();
+        this.collectorParameters = collectorParameters;
     }
 
     @Override
     protected LocalDB compute() {
+        siteModel = collectorParameters.getSiteModel();
+        pagesList = collectorParameters.getPagesList();
+        indexesSet = collectorParameters.getIndexesSet();
+        lemmasMap = collectorParameters.getLemmasMap();
         if (pagesList.size() > 1) {
             createSubtask().forEach(ForkJoinTask::join);
         } else {
@@ -38,8 +40,8 @@ public class LemmaAndIndexCollector extends RecursiveTask<LocalDB> {
         pagesList.forEach(page -> {
             List<Page> onePage = new ArrayList<>();
             onePage.add(page);
-            CollectorParameters collectorParameters = new CollectorParameters(siteModel, onePage, indexesSet, lemmasMap);
-            LemmaAndIndexCollector task = new LemmaAndIndexCollector(collectorParameters);
+            CollectorParameters newCollectorParameters = new CollectorParameters(siteModel, onePage, indexesSet, lemmasMap);
+            LemmaAndIndexCollector task = new LemmaAndIndexCollector(newCollectorParameters);
             task.fork();
             taskList.add(task);
         });
