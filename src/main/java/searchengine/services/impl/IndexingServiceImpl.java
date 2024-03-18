@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
@@ -100,11 +101,11 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
             String path = siteParser.getPath(link, siteUrl);
             int code = doc.connection().response().statusCode();
             String content = doc.html();
-            checkPageAndRemove(path);
             siteModel = checkSite(siteName, siteUrl);
+            checkPageAndRemove(path);
             repositories.getPageRepository().save(new Page(siteModel, path, code, content));
             repositories.getSiteRepository().updateStatusTime(LocalDateTime.now(), siteModel);
-            postLemmasAndIndexes(repositories.getPageRepository().findPage(path).get());
+            postLemmasAndIndexes(repositories.getPageRepository().findPage(path, siteModel).get());
         } catch (IOException exception) {
             logger.error("Время соединения истекло");
         }
@@ -164,7 +165,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
 
     @Transactional
     private void checkPageAndRemove(String path) {
-        Optional<Page> optionalPage = repositories.getPageRepository().findPage(path);
+        Optional<Page> optionalPage = repositories.getPageRepository().findPage(path, siteModel);
         if (optionalPage.isPresent()) {
             Page page = optionalPage.get();
             List<IndexModel> indexList = repositories.getIndexRepository().findIndexesByPage(page);

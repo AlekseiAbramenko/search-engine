@@ -19,8 +19,8 @@ public interface PageRepository extends CrudRepository<Page, Integer> {
     @Query("select p from Page p where p.site = ?1")
     List<Page> findPagesBySite(SiteModel site);
 
-    @Query("select p from Page p where p.path = ?1")
-    Optional<Page> findPage(String path);
+    @Query("select p from Page p where p.path = ?1 and p.site = ?2")
+    Optional<Page> findPage(String path, SiteModel site);
 
     @Transactional
     @Modifying
