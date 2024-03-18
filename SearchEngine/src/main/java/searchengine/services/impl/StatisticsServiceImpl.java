@@ -28,7 +28,7 @@ public class StatisticsServiceImpl implements searchengine.services.StatisticsSe
         total.setSites(repositories.getSiteRepository().sitesCount());
         total.setIndexing(true);
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
-        List<SiteModel> sitesList = repositories.getSiteRepository().gelAllSites();
+        List<SiteModel> sitesList = repositories.getSiteRepository().getAllSites();
         for (SiteModel site : sitesList) {
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(site.getName());
