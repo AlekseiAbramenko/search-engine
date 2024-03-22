@@ -1,7 +1,11 @@
-package searchengine.model;
+package searchengine.dto.search;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import searchengine.model.IndexModel;
+import searchengine.model.Lemma;
+import searchengine.model.Page;
+import searchengine.model.SiteModel;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;

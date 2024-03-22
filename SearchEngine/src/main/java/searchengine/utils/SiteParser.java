@@ -1,4 +1,4 @@
-package searchengine.workers;
+package searchengine.utils;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import searchengine.config.Connection;
 import searchengine.config.Repositories;
-import searchengine.model.ParsingParameters;
+import searchengine.dto.indexing.ParsingParameters;
 import searchengine.model.Page;
 
 import searchengine.model.SiteModel;

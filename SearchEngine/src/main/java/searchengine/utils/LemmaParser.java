@@ -1,4 +1,4 @@
-package searchengine.workers;
+package searchengine.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

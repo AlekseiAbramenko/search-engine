@@ -1,7 +1,9 @@
-package searchengine.model;
+package searchengine.dto.indexing;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import searchengine.model.Page;
+import searchengine.model.SiteModel;
 
 import java.util.concurrent.CopyOnWriteArraySet;
 

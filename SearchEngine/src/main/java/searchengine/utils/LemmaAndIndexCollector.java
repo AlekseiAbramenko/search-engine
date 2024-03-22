@@ -1,6 +1,7 @@
-package searchengine.workers;
+package searchengine.utils;
 
 import searchengine.dto.indexing.LocalDB;
+import searchengine.dto.search.CollectorParameters;
 import searchengine.model.*;
 
 import java.io.IOException;
