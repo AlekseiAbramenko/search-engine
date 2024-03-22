@@ -11,8 +11,8 @@ import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.SiteModel;
 import searchengine.config.Repositories;
-import searchengine.workers.DataCollector;
-import searchengine.workers.LemmaParser;
+import searchengine.utils.DataCollector;
+import searchengine.utils.LemmaParser;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -22,9 +22,29 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchingServiceImpl implements searchengine.services.SearchingService {
     private final Repositories repositories;
+    private final IndexingServiceImpl indexingService;
     private int queryWordsCount;
 
     public SearchResponse getSearching(RequestParameters requestParam) {
+        SearchResponse response = new SearchResponse();
+        String query = requestParam.getQuery();
+        if (query.isEmpty()) {
+            response.setError("Задан пустой поисковый запрос.");
+            return response;
+        }
+        if (indexingService.getSiteParserService() != null) {
+            if (indexingService.getSiteParserService().isTerminated()) {
+                return getData(requestParam);
+            } else {
+                response.setError("Индексация ещё идёт. Дождитесь её завершения.");
+                return response;
+            }
+        } else {
+            return getData(requestParam);
+        }
+    }
+
+    private SearchResponse getData(RequestParameters requestParam) {
         SearchResponse response = new SearchResponse();
         String siteUrl = requestParam.getSite();
         Map<String, String> queryLemmasMap = getLemmasMap(requestParam.getQuery());

@@ -11,18 +11,21 @@ import searchengine.config.Connection;
 import searchengine.config.Repositories;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
+import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.indexing.LocalDB;
-import searchengine.model.ParsingParameters;
+import searchengine.dto.search.CollectorParameters;
+import searchengine.dto.indexing.ParsingParameters;
 import searchengine.model.*;
-import searchengine.workers.LemmaParser;
-import searchengine.workers.SiteParser;
-import searchengine.workers.LemmaAndIndexCollector;
+import searchengine.utils.LemmaParser;
+import searchengine.utils.SiteParser;
+import searchengine.utils.LemmaAndIndexCollector;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -32,36 +35,41 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     @Getter
     private ExecutorService siteParserService;
     private ForkJoinPool siteParserPool;
-    @Getter
     private ForkJoinPool lemmasAndIndexesParserPool;
     private SiteModel siteModel;
     private final Logger logger = LoggerFactory.getLogger(IndexingServiceImpl.class);
 
     @Override
-    public void getIndexing() {
-        siteParserService = Executors.newSingleThreadExecutor();
-        for (Site site : sites.getSites()) {
-            siteParserService.submit(() -> {
-                String url = site.getUrl();
-                String name = site.getName();
-                if (repositories.getSiteRepository().findSiteByUrl(url).isPresent()) {
-                    cleanDB(url);
-                }
-                postSite(name, url);
-                siteModel = getSiteModelFromDB(url);
-                CopyOnWriteArraySet<String> linksSet = new CopyOnWriteArraySet<>();
-                CopyOnWriteArraySet<Page> pagesSet = new CopyOnWriteArraySet<>();
-                ParsingParameters parsingParameters = new ParsingParameters(siteModel, url, linksSet, pagesSet);
-                siteParserPool = new ForkJoinPool();
-                List<Page> pagesList = siteParserPool.invoke(new SiteParser(parsingParameters, repositories));
-                repositories.getPageRepository().saveAll(pagesList);
-                LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
-                repositories.getLemmaRepository().saveAll(localDB.getLemmasList());
-                repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
-                setIndexedStatus(siteModel);
-            });
+    public IndexingResponse getIndexing() {
+        if ((siteParserService == null || siteParserService.isTerminated()) ||
+                (lemmasAndIndexesParserPool == null || lemmasAndIndexesParserPool.isTerminated())) {
+            siteParserService = Executors.newSingleThreadExecutor();
+            for (Site site : sites.getSites()) {
+                siteParserService.submit(() -> {
+                    String url = site.getUrl();
+                    String name = site.getName();
+                    if (repositories.getSiteRepository().findSiteByUrl(url).isPresent()) {
+                        cleanDB(url);
+                    }
+                    postSite(name, url);
+                    siteModel = getSiteModelFromDB(url);
+                    CopyOnWriteArraySet<String> linksSet = new CopyOnWriteArraySet<>();
+                    CopyOnWriteArraySet<Page> pagesSet = new CopyOnWriteArraySet<>();
+                    ParsingParameters parsingParameters = new ParsingParameters(siteModel, url, linksSet, pagesSet);
+                    siteParserPool = new ForkJoinPool();
+                    List<Page> pagesList = siteParserPool.invoke(new SiteParser(parsingParameters, repositories));
+                    repositories.getPageRepository().saveAll(pagesList);
+                    LocalDB localDB = addLemmasAndIndexes(pagesList, siteModel);
+                    repositories.getLemmaRepository().saveAll(localDB.getLemmasList());
+                    repositories.getIndexRepository().saveAll(localDB.getIndexesSet());
+                    setIndexedStatus(siteModel);
+                });
+            }
+            siteParserService.shutdown();
+            return new IndexingResponse(true);
+        } else {
+            return new IndexingResponse(false, "Индексация уже запущена");
         }
-        siteParserService.shutdown();
     }
 
     private LocalDB addLemmasAndIndexes(List<Page> pagesList, SiteModel siteModel) {
@@ -73,42 +81,67 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
     }
 
     @Override
-    public void stopIndexing() {
-        siteParserPool.shutdownNow();
-        siteParserService.shutdownNow();
-        if (lemmasAndIndexesParserPool != null) {
-            lemmasAndIndexesParserPool.shutdownNow();
+    public IndexingResponse stopIndexing() {
+        if ((siteParserService == null || siteParserService.isTerminated()) ||
+                (lemmasAndIndexesParserPool == null || lemmasAndIndexesParserPool.isTerminated())) {
+            return new IndexingResponse(false, "Индексация не запущена");
+        } else {
+            siteParserPool.shutdownNow();
+            siteParserService.shutdownNow();
+            if (lemmasAndIndexesParserPool != null) {
+                lemmasAndIndexesParserPool.shutdownNow();
+            }
+            setFailedStatus(siteModel);
+            return new IndexingResponse(true);
         }
-        setFailedStatus(siteModel);
     }
 
     @Transactional
     @Override
-    public void indexingPage(String link) {
-        String siteUrl = "";
-        String siteName = "";
+    public IndexingResponse indexingPage(String link) {
+        String result = getResultLink(link);
+        if (checkLink(result)) {
+            Map<String, String> siteUrlAndName = getSiteUrlAndName(result);
+            String siteUrl = siteUrlAndName.keySet().iterator().next();
+            String siteName = siteUrlAndName.values().iterator().next();
+            try {
+                Document doc = Connection.getConnection(result);
+                SiteParser siteParser = new SiteParser();
+                String path = siteParser.getPath(result, siteUrl);
+                int code = doc.connection().response().statusCode();
+                String content = doc.html();
+                siteModel = checkSite(siteName, siteUrl);
+                checkPageAndRemove(path);
+                repositories.getPageRepository().save(new Page(siteModel, path, code, content));
+                repositories.getSiteRepository().updateStatusTime(LocalDateTime.now(), siteModel);
+                postLemmasAndIndexes(repositories.getPageRepository().findPage(path, siteModel).get());
+            } catch (IOException exception) {
+                logger.error("Время соединения истекло");
+            }
+            return new IndexingResponse(true);
+        } else {
+            return new IndexingResponse(false,
+                    "Данная страница находится за пределами сайтов," +
+                            "указанных в конфигурационном файле");
+        }
+    }
+
+    private String getResultLink(String link) {
+        String decodeLink = java.net.URLDecoder.decode(link, StandardCharsets.UTF_8);
+        String url = "url=";
+        return decodeLink.substring(url.length());
+    }
+
+    private Map<String, String> getSiteUrlAndName(String result) {
+        Map<String, String> siteUrlAndName = new HashMap<>();
         for (Site site : sites.getSites()) {
-            String substring = link.substring(0, site.getUrl().length());
+            String substring = result.substring(0, site.getUrl().length());
             if (substring.equals(site.getUrl())) {
-                siteUrl = site.getUrl();
-                siteName = site.getName();
+                siteUrlAndName.put(site.getUrl(), site.getName());
                 break;
             }
         }
-        try {
-            Document doc = Connection.getConnection(link);
-            SiteParser siteParser = new SiteParser();
-            String path = siteParser.getPath(link, siteUrl);
-            int code = doc.connection().response().statusCode();
-            String content = doc.html();
-            siteModel = checkSite(siteName, siteUrl);
-            checkPageAndRemove(path);
-            repositories.getPageRepository().save(new Page(siteModel, path, code, content));
-            repositories.getSiteRepository().updateStatusTime(LocalDateTime.now(), siteModel);
-            postLemmasAndIndexes(repositories.getPageRepository().findPage(path, siteModel).get());
-        } catch (IOException exception) {
-            logger.error("Время соединения истекло");
-        }
+        return siteUrlAndName;
     }
 
     @Transactional
@@ -140,7 +173,7 @@ public class IndexingServiceImpl implements searchengine.services.IndexingServic
                 }
             });
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error("Ошибка при добавлении лемм и индексов");
         }
     }
 
